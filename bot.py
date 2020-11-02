@@ -34,7 +34,15 @@ async def on_message(message):
 async def on_message(message):
     if message.content == "shark pog":
         await message.channel.send("https://tenor.com/view/shark-pog-gif-18408265")
+
+@bot.event
+async def on_message(message):
+    if message.content == "business noah":
+        await message.channel.send("https://imgur.com/1qWWHKX")
+
+@bot.event
+async def on_message(message):
+    if message.content == "george":
+        await message.channel.send("https://imgur.com/yaQjd5t")
         
-
-
 bot.run(TOKEN)
