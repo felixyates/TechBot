@@ -19,6 +19,10 @@ async def on_ready():
     print(bot.user.id)
     print('------')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=">help"))
+    async for guild in bot.fetch_guilds():
+        if guild.id == 340043063798005780:
+            channel = bot.get_channel(773235560944631868)
+            await channel.send("The main bot module is now online 🥳")
 
 @bot.command()
 async def hello(ctx):
@@ -102,11 +106,15 @@ async def stop(ctx):
 async def purge(ctx):
     "Deletes a specied number of messages (max 100).\nOnly works for messages under 14 days old, and you must have the 'Manage Messages' permission."
     channel = ctx.channel
-    msg = str(ctx.message)
-    deleteNo = int(msg.split( ))
+    msg = str(ctx.message.content)
+    print(msg)
+    msgList = msg.split( )
+    print(msgList)
+    deleteNo = int(msgList[1])
+    print(deleteNo)
     async with channel.typing():
-        await channel.delete_messages(ctx)
-        ctx.channel.send("Deleted "+ deleteNo +" messages.")
+        await message.delete_messages(deleteNo)
+        await ctx.channel.send("Deleted "+ deleteNo +" messages.",delete_after="5")
 
 # @bot.command(pass_context=True)
 # async def pause(ctx):
