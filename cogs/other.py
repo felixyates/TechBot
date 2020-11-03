@@ -32,12 +32,13 @@ class Other(commands.Cog, name="other"):
 
     @commands.command()
     async def help(self,ctx):
-        embedVar = discord.Embed(color=0x00ff00)
-        embedVar.add_field(name="Moderation",value=commands, inline=False)
-        embedVar.add_field(name="Text Responder",value="shiver me timbers\nshark pog\nbusiness noah\ngeorge\ntom\nthom\nfelix\nredditor\nharry\nfubz\nmarl\nsmile\nfoley\nblack\nwall\nbanwell\ndead\nbunch\nwhale\ngay")
+        embedVar = discord.Embed(color=0x00ff00,title="Commands",description="Prefix"+ "- >")
+        embedVar.set_footer(text="Coded by TechLife")
+        embedVar.add_field(name="Moderation",value="kick - Simple kick command\nban - Simple ban command\npurge - Currently not working, will delete up to 100 messages up to 14 days old.", inline=False)
+        embedVar.add_field(name="Text Responder",value="Simply say these phrases/words and an image or GIF will appear!\nshiver me timbers\nshark pog\nbusiness noah\ngeorge\ntom\nthom\nfelix\nredditor\nharry\nfubz\nmarl\nsmile\nfoley\nblack\nwall\nbanwell\ndead\nbunch\nwhale\ngay")
         embedVar.add_field(name="Voice",value="fnaf - Plays the FNAF phone call in the voice channel\ncats - As per Harry's request. Don't even ask.\nstop - Stops the currently playing audio in voice chat.", inline=False)
         embedVar.add_field(name="Other",value="hello - Says 'world'.\nadd - Adds two numbers together.\nservers - Lists some cool beans servers you should join.\nping - Returns 'pong' is the bot is online.\nhelp - Shows this message.", inline=False)
-        embedVar.add_field(name="Owner",value="Note, this commands can only be used by the bot's owner.\nshutdown - Shuts the bot down.\nload <extension> - Loads the specified extension.\nunload <extension> - Unloads the specified extension.", inline=False)
+        embedVar.add_field(name="Owner",value="Note, these commands can only be used by the bot's owner.\nshutdown - Shuts the bot down.\nload <extension> - Loads the specified extension.\nunload <extension> - Unloads the specified extension.", inline=False)
         await ctx.message.channel.send(embed=embedVar)
 
 def setup(bot):

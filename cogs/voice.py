@@ -12,6 +12,10 @@ vc_is_paused = False
 class Voice(commands.Cog, name="voice"):
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.Cog.listener()
+    async def leave(self,ctx):
+        await ctx.voice_client.disconnect()
     
     @commands.command(pass_context=True)
     async def fnaf(self,ctx):
