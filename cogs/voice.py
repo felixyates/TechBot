@@ -41,16 +41,16 @@ class Voice(commands.Cog):
             await ctx.channel.send("Join a channel first.")
             await ctx.channel.send(user).format(ctx.message.author.mention())
 
-        @commands.command(pass_context=True)
-        async def stop(self,ctx):
-            "Stops the currently playing audio in voice chat"
-            if vc.is_playing() == True:
-                vc.stop()
-                await self.leave(ctx)
-                vc_is_paused == False
-                await ctx.channel.send("Stopped!")
-            else:
-                await ctx.channel.send("Nothing is playing!")
+    @commands.command(pass_context=True)
+    async def stop(self,ctx):
+        "Stops the currently playing audio in voice chat"
+        if vc.is_playing() == True:
+            vc.stop()
+            await self.leave(ctx)
+            vc_is_paused == False
+            await ctx.channel.send("Stopped!")
+        else:
+            await ctx.channel.send("Nothing is playing!")
 
 def setup(bot):
     bot.add_cog(Voice(bot))

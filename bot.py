@@ -28,10 +28,16 @@ async def on_ready():
 @bot.command()
 async def load(ctx,extension):
     bot.load_extension(f'cogs.{extension}')
+    embedVar = discord.Embed(color=0x00ff00)
+    embedVar.add_field(name="Successful Load",value="✅ Successfully loaded "+ extension, inline=False)
+    await ctx.message.channel.send(embed=embedVar)
 
 @bot.command()
 async def unload(ctx,extension):
-    bot.load_extension(f'cogs.{extension}')
+    bot.unload_extension(f'cogs.{extension}')
+    embedVar = discord.Embed(color=0x00ff00)
+    embedVar.add_field(name="Successful Unload",value="✅ Successfully unloaded "+ extension, inline=False)
+    await ctx.message.channel.send(embed=embedVar)
 
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
