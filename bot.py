@@ -18,6 +18,7 @@ async def on_ready():
     print(bot.user.name,end=" ")
     print(bot.user.id)
     print('------')
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=">help"))
 
 @bot.command()
 async def hello(ctx):
@@ -95,6 +96,17 @@ async def stop(ctx):
         await ctx.channel.send("Stopped!")
     else:
         await ctx.channel.send("Nothing is playing!")
+
+@bot.command(pass_context=True)
+@has_permissions(manage_messages=True)
+async def purge(ctx):
+    "Deletes a specied number of messages (max 100).\nOnly works for messages under 14 days old, and you must have the 'Manage Messages' permission."
+    channel = ctx.channel
+    msg = str(ctx.message)
+    deleteNo = int(msg.split( ))
+    async with channel.typing():
+        await channel.delete_messages(ctx)
+        ctx.channel.send("Deleted "+ deleteNo +" messages.")
 
 # @bot.command(pass_context=True)
 # async def pause(ctx):
