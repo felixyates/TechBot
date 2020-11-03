@@ -26,6 +26,7 @@ async def on_ready():
             await channel.send("The main bot module is now online 🥳")
 
 @bot.command()
+@commands.is_owner()
 async def load(ctx,extension):
     bot.load_extension(f'cogs.{extension}')
     embedVar = discord.Embed(color=0x00ff00)
@@ -33,11 +34,14 @@ async def load(ctx,extension):
     await ctx.message.channel.send(embed=embedVar)
 
 @bot.command()
+@commands.is_owner()
 async def unload(ctx,extension):
     bot.unload_extension(f'cogs.{extension}')
     embedVar = discord.Embed(color=0x00ff00)
     embedVar.add_field(name="Successful Unload",value="✅ Successfully unloaded "+ extension, inline=False)
     await ctx.message.channel.send(embed=embedVar)
+
+bot.remove_command("help")
 
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):

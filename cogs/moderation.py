@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 
-class Moderation(commands.Cog):
+class Moderation(commands.Cog, name="moderation"):
 
     def __init__(self, bot):
         self.bot = bot
@@ -28,11 +28,11 @@ class Moderation(commands.Cog):
         banMessage = "Successfully banned" ,str(member)
         await ctx.channel.send(banMessage)
         print("Successfully banned" + " " + str(member))
-
+ 
     @commands.command(pass_context=True)
     @has_permissions(manage_messages=True)
     async def purge(self,ctx):
-        "Deletes a specied number of messages (max 100).\nOnly works for messages under 14 days old, and you must have the 'Manage Messages' permission."
+        "Deletes a specied number of messages (max 100).Only works for messages under 14 days old, and you must have the 'Manage Messages' permission. Currently broken, too."
         channel = ctx.channel
         msg = str(ctx.message.content)
         print(msg)
@@ -41,7 +41,7 @@ class Moderation(commands.Cog):
         deleteNo = int(msgList[1])
         print(deleteNo)
         async with channel.typing():
-            await message.delete_messages(deleteNo)
+            await ctx.channel.delete_messages(deleteNo)
             await ctx.channel.send("Deleted "+ deleteNo +" messages.",delete_after="5")
 
 def setup(bot):

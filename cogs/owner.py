@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 
-class Owner(commands.Cog):
+class Owner(commands.Cog, name="owner"):
     def __init__(self, bot):
         self.bot = bot
 

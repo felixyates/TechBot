@@ -9,14 +9,9 @@ from async_timeout import timeout
 global vc_is_paused
 vc_is_paused = False
 
-class Voice(commands.Cog):
+class Voice(commands.Cog, name="voice"):
     def __init__(self, bot):
         self.bot = bot
-
-    @commands.command()
-    async def leave(self,ctx):
-        "Leave a voice channel"
-        await ctx.voice_client.disconnect()
     
     @commands.command(pass_context=True)
     async def fnaf(self,ctx):
@@ -40,10 +35,33 @@ class Voice(commands.Cog):
         else:
             await ctx.channel.send("Join a channel first.")
             await ctx.channel.send(user).format(ctx.message.author.mention())
+    
+    @commands.command(pass_context=True)
+    async def cats(self,ctx):
+        "As per Harry's request. Don't even ask."
+        # grab the user who sent the command
+        user = ctx.message.author
+        channel = user.voice.channel
+        if channel!= None:
+            # grab user's voice channel
+            channelName=channel.name
+            await ctx.channel.send('@'+str(user)+' is in channel: '+ channelName)
+            # create StreamPlayer
+            global vc
+            vc= await channel.connect()
+            vc.play(discord.FFmpegPCMAudio('cats.mp3'), after=lambda e: print('done', e))
+            while vc.is_playing() == True:
+                await asyncio.sleep(1)
+            # disconnect after the player has finished
+            vc.stop()
+            await self.leave(ctx)
+        else:
+            await ctx.channel.send("Join a channel first.")
+            await ctx.channel.send(user).format(ctx.message.author.mention())
 
     @commands.command(pass_context=True)
     async def stop(self,ctx):
-        "Stops the currently playing audio in voice chat"
+        "Stops the currently playing audio in voice chat."
         if vc.is_playing() == True:
             vc.stop()
             await self.leave(ctx)
