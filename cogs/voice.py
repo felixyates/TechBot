@@ -80,6 +80,12 @@ class Voice(commands.Cog, name="voice"):
         await self.player(ctx,path)
 
     @commands.command(pass_context=True)
+    async def beyondthesea(self,ctx):
+        "Plays Beyond the Sea by Bobby Darin in the voice channel"
+        path = 'beyondthesea.mp3'
+        await self.player(ctx,path)
+
+    @commands.command(pass_context=True)
     async def stop(self,ctx):
         "Stops the currently playing audio in voice chat."
         if vc.is_playing() == True:
