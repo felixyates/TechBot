@@ -23,7 +23,7 @@ class Other(commands.Cog, name="other"):
     @commands.command()
     async def servers(self,ctx):
         "Lists some cool beans servers you should join"
-        await ctx.send("- gaming (#1): https://discord.gg/wWdr9bf\n- gaming (#2): https://discord.gg/bZFFgXnAVZ")
+        await ctx.send("- gaming (#1): https://discord.gg/wWdr9bf\n- gaming (#2): https://discord.gg/bZFFgXnAVZ\n- TechLife (dev's server): https://discord.gg/uzyeYFN")
 
     @commands.command()
     async def ping(self,ctx):
