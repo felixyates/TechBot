@@ -35,14 +35,20 @@ class Moderation(commands.Cog, name="moderation"):
         "Deletes a specied number of messages (max 100).Only works for messages under 14 days old, and you must have the 'Manage Messages' permission. Currently broken, too."
         channel = ctx.channel
         msg = str(ctx.message.content)
-        print(msg)
-        msgList = msg.split( )
-        print(msgList)
+        msgList = msg.split(" ")
         deleteNo = int(msgList[1])
-        print(deleteNo)
-        async with channel.typing():
-            await ctx.channel.delete_messages(deleteNo)
-            await ctx.channel.send("Deleted "+ deleteNo +" messages.",delete_after="5")
+        if (deleteNo >= 0) and (deleteNo <=100):
+            async with channel.typing():
+                messages = await channel.history(limit=deleteNo).flatten()
+                await ctx.channel.delete_messages(messages)
+                #await ctx.channel.send("Deleted %s messages." % cleared,delete_after="5")
+                embedVar = discord.Embed(color=0x00ff00)
+                embedVar.add_field(name="Deleted messages",value="✅ Deleted %s messages." % deleteNo, inline=False)
+                await ctx.message.channel.send(embed=embedVar,delete_after=5)
+        else:
+            embedVar = discord.Embed(color=0xff0000)
+            embedVar.add_field(name="Didn't delete messages",value="❎ The number of deleted messages must be between 0 and 100!", inline=False)
+            await ctx.message.channel.send(embed=embedVar,delete_after=5)
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
