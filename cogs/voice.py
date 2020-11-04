@@ -18,9 +18,10 @@ class Voice(commands.Cog, name="voice"):
 
     @commands.Cog.listener()
     async def player(self,ctx,path,mode):
-        user = ctx.message.author
-        channel = user.voice.channel
+        global vc
         if mode == 'play':
+            user = ctx.message.author
+            channel = user.voice.channel
             if channel!= None:
                 # grab user's voice channel
                 channelName=channel.name
@@ -28,9 +29,10 @@ class Voice(commands.Cog, name="voice"):
                 embedVar.add_field(name="Joining",value="✅ Joining channel "+ channelName, inline=False)
                 await ctx.message.channel.send(embed=embedVar)
                 # create StreamPlayer
-                global vc
                 vc= await channel.connect()
                 vc.play(discord.FFmpegPCMAudio(path), after=lambda e: print('done', e))
+                vc.source = discord.PCMVolumeTransformer(vc.source)
+                vc.source.volume = 1.0
                 while vc.is_playing() == True:
                     await asyncio.sleep(1)
                 # disconnect after the player has finished
@@ -40,22 +42,24 @@ class Voice(commands.Cog, name="voice"):
                 embedVar.add_field(name="Couldn't play",value="❎ Join a voice channel first.", inline=False)
                 await ctx.message.channel.send(embed=embedVar)
         elif mode == 'volume':
-            message = ctx.message.content
-            message = message.split(" ")
-            msgvolume = float(message[1])
-            volume = float(message[1])/100
-            if (msgvolume >= 0) and (msgvolume <= 100):
-                if vc.is_playing() == True:
-                    print("\nVoice connection is active\n")
-                    discord.PCMVolumeTransformer(original=discord.FFmpegPCMAudio(path),volume=volume)
-                    print("Successfully changed volume")
-                    embedVar = discord.Embed(color=0x00ff00)
-                    embedVar.add_field(name="Volume changed",value="✅ Set volume to "+ str(msgvolume)+ "%", inline=False)
-                    await ctx.message.channel.send(embed=embedVar)
-                    return
-                embedVar = discord.Embed(color=0xff0000,set_footer="Volume value was correct, though.")
-                embedVar.add_field(name="Volume not changed",value="❎ Nothing is playing!", inline=False)
-                await ctx.message.channel.send(embed=embedVar)
+            if vc!=None:
+                message = ctx.message.content
+                message = message.split(" ")
+                msgvolume = float(message[1])
+                volume = float(message[1])/100
+                if (msgvolume >= 0) and (msgvolume <= 100):
+                    if vc.is_playing() == True:
+                        print("\nVoice connection is active\n")
+                        vc.source.volume = volume
+                        #discord.PCMVolumeTransformer(original=discord.FFmpegPCMAudio(path),volume=volume)
+                        print("Successfully changed volume")
+                        embedVar = discord.Embed(color=0x00ff00)
+                        embedVar.add_field(name="Volume changed",value="✅ Set volume to "+ str(msgvolume)+ "%", inline=False)
+                        await ctx.message.channel.send(embed=embedVar)
+                    else:
+                        embedVar = discord.Embed(color=0xff0000,set_footer="Volume value was correct, though.")
+                        embedVar.add_field(name="Volume not changed",value="❎ Nothing is playing!", inline=False)
+                        await ctx.message.channel.send(embed=embedVar)
             else:
                 embedVar = discord.Embed(color=0xff0000)
                 embedVar.add_field(name="Volume not changed",value="❎ Nothing is playing!", inline=False)
