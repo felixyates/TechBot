@@ -1,0 +1,41 @@
+Command,Category,Description
+kick <@mention>,Moderation,Simple kick command.
+ban <@mention>,Moderation,Simple ban command.
+purge <x>,Moderation,Currently not working - will delete up to 100 messages up to 14 days old.
+shiver me timbers,Text Responder,
+shark pog,Text Responder,
+business noah,Text Responder,
+george,Text Responder,
+tom,Text Responder,
+thom,Text Responder,
+felix,Text Responder,
+redditor,Text Responder,
+harry,Text Responder,
+fubz,Text Responder,
+marl,Text Responder,
+smile,Text Responder,
+foley,Text Responder,
+black,Text Responder,
+wall,Text Responder,
+banwell,Text Responder,
+dead,Text Responder,
+bunch,Text Responder,
+whale,Text Responder,
+gay,Text Responder,
+fnaf,Voice,Plays the FNAF phone call.
+cats,Voice,As per Harry's request. Don't even ask.
+fortnite,Voice,Plays the old Fortnite Christmas music.
+boom,Voice,Plays the Vine boom sound effect.
+breakfromads,Voice,Plays the Spotify 'Wanna break from the ads?' clip.
+bruh,Voice,Plays the bruh sound effect.
+wifi,Voice,Plays the 'Get WiFi anywhere you go' clip.
+beyondthesea,Voice,Plays 'Beyond the Sea' by Bobby Darin.
+stop,Voice,Stops the currently playing audio.
+hello,Other,Says 'world'.
+add <x> <y>,Other,Adds two numbers together.
+servers,Other,Lists some cool beans servers you should join.
+ping,Other,Returns 'pong' if the bot is online.
+help,Other,Shows this message.
+shutdown,Owner,Shuts the bot down.
+load <extension>,Owner,Loads the specified extension.
+unload <extension>,Owner,Unloads the specified extension.

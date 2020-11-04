@@ -1,9 +1,9 @@
 import discord
 import os
 import asyncio
-#import youtube_dl
 from discord.ext import commands
 from discord.ext.commands import has_permissions
+from discord.ext.commands import CommandNotFound
 from async_timeout import timeout
 
 TOKEN = 'NzcyODU5MzQ0NTUwNDk0MjE5.X6AzWg.rLdgR--eCLiK2d9IYztlUxOsKoA'
@@ -23,7 +23,13 @@ async def on_ready():
     async for guild in bot.fetch_guilds():
         if guild.id == 340043063798005780:
             channel = bot.get_channel(773235560944631868)
-            await channel.send("The main bot module is now online 🥳")
+            await channel.send("The bot is now online")
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, CommandNotFound):
+        return
+    raise error
 
 @bot.command()
 @commands.is_owner()
@@ -31,7 +37,7 @@ async def load(ctx,extension):
     bot.load_extension(f'cogs.{extension}')
     embedVar = discord.Embed(color=0x00ff00)
     embedVar.add_field(name="Successful Load",value="✅ Successfully loaded "+ extension, inline=False)
-    await ctx.message.channel.send(embed=embedVar)
+    await ctx.message.channel.send(embed=embedVar,delete_after=5)
 
 @bot.command()
 @commands.is_owner()
@@ -39,7 +45,16 @@ async def unload(ctx,extension):
     bot.unload_extension(f'cogs.{extension}')
     embedVar = discord.Embed(color=0x00ff00)
     embedVar.add_field(name="Successful Unload",value="✅ Successfully unloaded "+ extension, inline=False)
-    await ctx.message.channel.send(embed=embedVar)
+    await ctx.message.channel.send(embed=embedVar,delete_after=5)
+
+@bot.command()
+@commands.is_owner()
+async def reload(ctx,extension):
+    bot.unload_extension(f'cogs.{extension}')
+    bot.load_extension(f'cogs.{extension}')
+    embedVar = discord.Embed(color=0x00ff00)
+    embedVar.add_field(name="Successful Reload",value="✅ Successfully reloaded "+ extension, inline=False)
+    await ctx.message.channel.send(embed=embedVar,delete_after=5)
 
 bot.remove_command("help")
 
