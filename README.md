@@ -10,13 +10,12 @@ Just a simple Discord bot that I'm trying to build :) I only intend for it to be
 *Note, you can view these at any time with the command >help*
 
 ### Moderation
-* kick {mention-user} - Simple kick command
-* ban {mention-user} - Simple ban command
-* purge {number-of-messages} - Deletes the specified number of messages. Currently broken.
+* kick {mention-user} - Simple kick command.
+* ban {mention-user} - Simple ban command.
+* purge {no-of-messages} - Deletes the specified number of messages (up to 100 messages up to 14 days old).
 
 ### Voice
 * fnaf - Plays the FNAF phone call.
-* cats - Don't even ask. Harry's idea.
 * fortnite - Plays the old Fortnite Christmas music.
 * boom - Plays the Vine boom sound effect.
 * breakfromads - Plays the Spotify 'Wanna break from the ads?' clip.
@@ -34,5 +33,6 @@ Just a simple Discord bot that I'm trying to build :) I only intend for it to be
 
 ### Owner
 * shutdown - Shuts the bot down.
+* reload {extension} - Reloads the specified extension.
 * load {extension} - Loads the specified extension.
 * unload {extension} - Unloads the specified extension.
