@@ -34,5 +34,5 @@ Just a simple Discord bot that I'm trying to build :) I only intend for it to be
 
 ### Owner
 * shutdown - Shuts the bot down.
-* load <extension> - Loads the specified extension.
-* unload <extension> - Unloads the specified extension.
+* load {extension} - Loads the specified extension.
+* unload {extension} - Unloads the specified extension.
