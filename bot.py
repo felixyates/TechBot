@@ -3,7 +3,7 @@ import os
 import asyncio
 from discord.ext import commands
 from discord.ext.commands import has_permissions
-from discord.ext.commands import CommandNotFound
+from discord.ext.commands import CommandNotFound, CommandInvokeError
 from async_timeout import timeout
 
 TOKEN = 'NzcyODU5MzQ0NTUwNDk0MjE5.X6AzWg.rLdgR--eCLiK2d9IYztlUxOsKoA'
@@ -29,6 +29,8 @@ async def on_ready():
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
         return
+    if isinstance(error, CommandInvokeError): # This is to stop flagging an error with the leave() command.
+        return                                # It is probably a good idea to remove it when testing a new module/command.
     raise error
 
 @bot.command()
