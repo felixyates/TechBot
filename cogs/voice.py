@@ -23,21 +23,24 @@ class Voice(commands.Cog, name="voice"):
             user = ctx.message.author
             channel = user.voice.channel
             if channel!= None:
-                # grab user's voice channel
                 channelName=channel.name
+                # Sends successful join message
                 embedVar = discord.Embed(color=0x00ff00)
                 embedVar.add_field(name="Joining",value="✅ Joining channel "+ channelName, inline=False)
                 await ctx.message.channel.send(embed=embedVar)
-                # create StreamPlayer
+                # Connects to the voice channel
                 vc= await channel.connect()
                 vc.play(discord.FFmpegPCMAudio(path), after=lambda e: print('done', e))
+                # Allows the volume to be changed
                 vc.source = discord.PCMVolumeTransformer(vc.source)
                 vc.source.volume = 1.0
                 while vc.is_playing() == True:
                     await asyncio.sleep(1)
-                # disconnect after the player has finished
+                # Disconnects the bot once the track has played out
                 vc.stop()
+                await self.leave(ctx)
             else:
+                # Sends unsuccessful join message
                 embedVar = discord.Embed(color=0xff0000)
                 embedVar.add_field(name="Couldn't play",value="❎ Join a voice channel first.", inline=False)
                 await ctx.message.channel.send(embed=embedVar)
@@ -51,19 +54,27 @@ class Voice(commands.Cog, name="voice"):
                     if vc.is_playing() == True:
                         print("\nVoice connection is active\n")
                         vc.source.volume = volume
-                        #discord.PCMVolumeTransformer(original=discord.FFmpegPCMAudio(path),volume=volume)
                         print("Successfully changed volume")
+                        # Sends successful volume change
                         embedVar = discord.Embed(color=0x00ff00)
                         embedVar.add_field(name="Volume changed",value="✅ Set volume to "+ str(msgvolume)+ "%", inline=False)
                         await ctx.message.channel.send(embed=embedVar)
                     else:
-                        embedVar = discord.Embed(color=0xff0000,set_footer="Volume value was correct, though.")
+                        # Sends unsuccessful volume change as nothing is playing
+                        embedVar = discord.Embed(color=0xff0000)
+                        embedVar.set_footer(text="Volume value was correct, though.")
                         embedVar.add_field(name="Volume not changed",value="❎ Nothing is playing!", inline=False)
                         await ctx.message.channel.send(embed=embedVar)
             else:
                 embedVar = discord.Embed(color=0xff0000)
                 embedVar.add_field(name="Volume not changed",value="❎ Nothing is playing!", inline=False)
                 await ctx.message.channel.send(embed=embedVar)
+        elif mode == 'loop':
+            print('loop')
+        elif mode == 'pause':
+            print('pause')
+        elif mode == 'resume':
+            print('resume')
     
     @commands.command(pass_context=True)
     async def fnaf(self,ctx):
@@ -132,28 +143,16 @@ class Voice(commands.Cog, name="voice"):
             embedVar = discord.Embed(color=0xff0000)
             embedVar.add_field(name="Didn't stop",value="❎ Nothing is playing!", inline=False)
             await ctx.message.channel.send(embed=embedVar)
+    
+"""     @commands.command(pass_context=True)
+    async def pause(self,ctx):
+        "Pauses the currently playing audio in voice chat"
+        await self.player(ctx,'','pause')
+
+    @commands.command(pass_context=True)
+    async def resume(self,ctx):
+        "Resumes the currently playing audio in voice chat"
+        await self.player(ctx,'','resume') """
 
 def setup(bot):
     bot.add_cog(Voice(bot))
-        
-# @commands.command(pass_context=True)
-# async def pause(ctx):
-#     "Pauses the currently playing audio in voice chat"
-#     if vc.is_playing() == True:
-#         vc.pause()
-#         await ctx.channel.send("Paused!")
-#         global vc_is_paused
-#         vc_is_paused = True
-#     else:
-#         await ctx.channel.send("Nothing is playing!")
-
-# @commands.command(pass_context=True)
-# async def resume(ctx):
-#     "Resumes the currently playing audio in voice chat"
-#     if vc_is_paused == True:
-#         vc.resume()
-#         while vc.is_playing() != True:
-#             await asyncio.sleep(1)
-#         await ctx.channel.send("Resumed!")
-#     else:
-#         await ctx.channel.send("Nothing is playing!")
