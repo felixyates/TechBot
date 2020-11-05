@@ -27,6 +27,7 @@ Just a simple Discord bot that I'm trying to build :) I only intend for it to be
   * [rl](https://www.youtube.com/watch?v=QHVREB6fdvI) - Rocket League Intro Music / 'All I Need' by Slushii.
   * [wifi](https://www.youtube.com/watch?v=9p0pdiTOlzw) - 'Get WiFi Anywhere You Go' meme.
 * volume {0-100} - Sets the volume of the currently playing audio.
+* stop - Stops the currently playing audio.
 
 ### Other
 * add {x} {y} - Adds two numbers together
