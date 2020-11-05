@@ -15,17 +15,20 @@ Just a simple Discord bot that I'm trying to build :) I only intend for it to be
 * purge {no-of-messages} - Deletes the specified number of messages (up to 100 messages up to 14 days old).
 
 ### Voice
-* fnaf - Plays the FNAF phone call.
-* fortnite - Plays the old Fortnite Christmas music.
-* boom - Plays the Vine boom sound effect.
-* breakfromads - Plays the Spotify 'Wanna break from the ads?' clip.
-* bruh - Plays the bruh sound effect.
-* wifi - Plays the 'Get WiFi anywhere you go' clip.
-* beyondthesea - Plays 'Beyond the Sea' by Bobby Darin.
-* stop - Stops the currently playing audio in the voice channel
+* play {file} - Plays the specified sound file. The currently available list is below:
+  * fnaf - Plays the FNAF phone call.
+  * fortnite - Plays the old Fortnite Christmas music.
+  * boom - Plays the Vine boom sound effect.
+  * breakfromads - Plays the Spotify 'Wanna break from the ads?' clip.
+  * bruh - Plays the bruh sound effect.
+  * wifi - Plays the 'Get WiFi anywhere you go' clip.
+  * beyondthesea - Plays 'Beyond the Sea' by Bobby Darin.
+  * minecraftAlpha - Plays 'Minecraft: Volume Alpha' by C418.
+* stop - Stops the currently playing audio in the voice channel.
+* volume {0-100} - Sets the volume of the currently playing audio.
 
 ### Other
-* add - Adds two numbers together
+* add {x} {y} - Adds two numbers together
 * ping - Returns 'pong' if the bot is active
 * servers - Lists some cool beans servers you should join
 * hello - Says 'world'
