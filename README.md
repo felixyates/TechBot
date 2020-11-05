@@ -17,15 +17,15 @@ Just a simple Discord bot that I'm trying to build :) I only intend for it to be
 
 ### Voice
 * play {file} - Plays the specified sound file. The currently available list is below:
-  * fnaf - Plays the FNAF phone call.
-  * fortnite - Plays the old Fortnite Christmas music.
-  * boom - Plays the Vine boom sound effect.
-  * breakfromads - Plays the Spotify 'Wanna break from the ads?' clip.
-  * bruh - Plays the bruh sound effect.
-  * wifi - Plays the 'Get WiFi anywhere you go' clip.
-  * beyondthesea - Plays 'Beyond the Sea' by Bobby Darin.
-  * minecraftAlpha - Plays 'Minecraft: Volume Alpha' by C418.
-* stop - Stops the currently playing audio in the voice channel.
+  * [beyondthesea](https://www.youtube.com/watch?v=ptsa21ULFSo) - 'Beyond the Sea' by Bobby Darin.
+  * [boom](https://www.youtube.com/watch?v=_vBVGjFdwk4) - Vine boom sound effect.
+  * [breakfromads](https://www.youtube.com/watch?v=mtihCM8mzeU) - Spotify 'Wanna Break from the Ads?'.
+  * [bruh](https://www.youtube.com/watch?v=2ZIpFytCSVc) - Bruh Sound Effect #2.
+  * [fnaf](https://www.youtube.com/watch?v=zSmEKJ7RIpc) - FNAF Night 1 Phone Call.
+  * [fortnite](https://www.youtube.com/watch?v=CjaeNACb5gc) - Fortnite Christmas Music.
+  * [minecraftAlpha](https://www.youtube.com/watch?v=6wv84OUmnwg&list=PLHykAyQQdTart3T8wrDjEnAFEmbVstInA) - 'Minecraft: Volume Alpha' by C418.
+  * [rl](https://www.youtube.com/watch?v=QHVREB6fdvI) - Rocket League Intro Music / 'All I Need' by Slushii.
+  * [wifi](https://www.youtube.com/watch?v=9p0pdiTOlzw) - 'Get WiFi Anywhere You Go' meme.
 * volume {0-100} - Sets the volume of the currently playing audio.
 
 ### Other
