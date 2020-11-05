@@ -1,0 +1,3 @@
+kick - Simple kick command.
+ban - Simple ban command.
+purge - Deletes up to 100 messages up to 14 days old in the channel it is sent.

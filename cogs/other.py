@@ -6,6 +6,63 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 
+modCmds = []
+modCmdsFile = open("cogs/moderation.txt")
+modCmds = modCmdsFile.readlines()
+modCmdsFile.close()
+
+otherCmds = []
+otherCmdsFile = open("cogs/other.txt")
+otherCmds = otherCmdsFile.readlines()
+otherCmdsFile.close()
+
+ownerCmds = []
+ownerCmdsFile = open("cogs/owner.txt")
+ownerCmds = ownerCmdsFile.readlines()
+ownerCmdsFile.close()
+
+txtCmds = []
+txtCmdsFile = open("cogs/textresponder.txt")
+txtCmds = txtCmdsFile.readlines()
+txtCmdsFile.close()
+
+voiceCmds = []
+voiceCmdsFile = open("cogs/voice.txt")
+voiceCmds = voiceCmdsFile.readlines()
+voiceCmdsFile.close()
+
+availableEmbed = []
+availableEmbedFile = open("voice/availableEmbed.txt")
+availableEmbed = availableEmbedFile.readlines()
+availableEmbedFile.close()
+
+modules = ['Moderation','Text Responder','Voice','Available sound files to play','Other','Owner']
+
+def converttostr(input_seq, separator):
+   # Join all the strings in list
+   final_str = separator.join(input_seq)
+   return final_str
+
+global helpVar
+helpVar = discord.Embed(color=0x00ff00,title="Commands",description="Prefix"+ "- >")
+helpVar.set_footer(text="Coded by TechLife")
+i = 0
+for i in range(len(modules)):
+    if modules[i] == 'Moderation':
+        currentModule = ''.join(modCmds)
+    elif modules[i] == 'Other':
+        currentModule = ''.join(otherCmds)
+    elif modules[i] == 'Owner':
+        currentModule = ''.join(ownerCmds)
+    elif modules[i] == 'Text Responder':
+        currentModule = ''.join(txtCmds)
+    elif modules[i] == 'Voice':
+        currentModule = ''.join(voiceCmds)
+    elif modules[i] == 'Available sound files to play':
+        currentModule = ''.join(availableEmbed)
+    helpVar.add_field(name=modules[i],value=currentModule, inline=False)
+    i += 1
+
 class Other(commands.Cog, name="other"):
     def __init__(self, bot):
         self.bot = bot
@@ -32,14 +89,7 @@ class Other(commands.Cog, name="other"):
 
     @commands.command()
     async def help(self,ctx):
-        embedVar = discord.Embed(color=0x00ff00,title="Commands",description="Prefix"+ "- >")
-        embedVar.set_footer(text="Coded by TechLife")
-        embedVar.add_field(name="Moderation",value="kick - Simple kick command\nban - Simple ban command\npurge - Deletes up to 100 messages up to 14 days old in the channel it is sent.", inline=False)
-        embedVar.add_field(name="Text Responder",value="Simply say these phrases/words and an image or GIF will appear!\nshiver me timbers\nshark pog\nbusiness noah\ngeorge\ntom\nthom\nfelix\nredditor\nharry\nfubz\nmarl\nsmile\nfoley\nblack\nwall\nbanwell\ndead\nbunch\nwhale\ngay")
-        embedVar.add_field(name="Voice",value="fnaf - Plays the FNAF phone call in the voice channel\nfortnite - Plays the old Fortnite Christmas music in the voice channel.\nboom - Plays the vine boom sound effect in the voice channel.\nbreakfromads - Plays the Spotify 'Wanna break from the ads?' clip in the voice channel.\nbruh - Plays the bruh sound effect in the voice channel.\nwifi - Plays the 'Get WiFi anywhere you go' clip in the voice channel.\nbeyondthesea - Plays Beyond the Sea by Bobby Darin in the voice channel.\nstop - Stops the currently playing audio in voice chat.\nvolume {0-100} - Sets the volume of the currently playing audio in voice chat.", inline=False)
-        embedVar.add_field(name="Other",value="hello - Says 'world'.\nadd - Adds two numbers together.\nservers - Lists some cool beans servers you should join.\nping - Returns 'pong' is the bot is online.\nhelp - Shows this message.", inline=False)
-        embedVar.add_field(name="Owner",value="Note, these commands can only be used by the bot's owner.\nshutdown - Shuts the bot down.\nload <extension> - Loads the specified extension.\nunload <extension> - Unloads the specified extension.\nreload <extension> - Reloads the specified extension.", inline=False)
-        await ctx.message.channel.send(embed=embedVar)
+        await ctx.message.channel.send(embed=helpVar)
 
 def setup(bot):
     bot.add_cog(Other(bot))

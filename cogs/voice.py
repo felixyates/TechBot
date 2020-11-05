@@ -8,6 +8,13 @@ from async_timeout import timeout
 global vc_is_paused
 vc_is_paused = False
 
+# Checks and stores currently available mp3 files
+global available
+available = []
+availableFile = open("voice/available.txt")
+available = availableFile.read().splitlines()
+availableFile.close()
+
 class Voice(commands.Cog, name="voice"):
     def __init__(self, bot):
         self.bot = bot
@@ -24,12 +31,13 @@ class Voice(commands.Cog, name="voice"):
             channel = user.voice.channel
             if channel!= None:
                 channelName=channel.name
+                # Connects to the voice channel
+                vc= await channel.connect()
                 # Sends successful join message
                 embedVar = discord.Embed(color=0x00ff00)
                 embedVar.add_field(name="Joining",value="✅ Joining channel "+ channelName, inline=False)
                 await ctx.message.channel.send(embed=embedVar)
-                # Connects to the voice channel
-                vc= await channel.connect()
+                # Creates the FFmpeg player and plays file from path
                 vc.play(discord.FFmpegPCMAudio(path), after=lambda e: print('done', e))
                 # Allows the volume to be changed
                 vc.source = discord.PCMVolumeTransformer(vc.source)
@@ -75,54 +83,6 @@ class Voice(commands.Cog, name="voice"):
             print('pause')
         elif mode == 'resume':
             print('resume')
-    
-    @commands.command(pass_context=True)
-    async def fnaf(self,ctx):
-        "Plays the FNAF phone call in the voice channel"
-        path = 'voice/fnaf.mp3'
-        await self.player(ctx,path,'play')
-    
-    @commands.command(pass_context=True)
-    async def fortnite(self,ctx):
-        "Plays the old Fortnite Christmas music in the voice channel"
-        path = 'voice/fortnite.mp3'
-        await self.player(ctx,path,'play')
-
-    @commands.command(pass_context=True)
-    async def boom(self,ctx):
-        "Plays the vine boom sound effect in the voice channel"
-        path = 'voice/boom.mp3'
-        await self.player(ctx,path,'play')
-
-    @commands.command(pass_context=True)
-    async def breakfromads(self,ctx):
-        "Plays the Spotify 'Wanna break from the ads?' clip in the voice channel"
-        path = 'voice/breakfromads.mp3'
-        await self.player(ctx,path,'play')
-
-    @commands.command(pass_context=True)
-    async def bruh(self,ctx):
-        "Plays the bruh sound effect in the voice channel"
-        path = 'voice/bruh.mp3'
-        await self.player(ctx,path,'play')
-
-    @commands.command(pass_context=True)
-    async def wifi(self,ctx):
-        "Plays the 'Get WiFi anywhere you go' clip in the voice channel"
-        path = 'voice/wifi.mp3'
-        await self.player(ctx,path,'play')
-
-    @commands.command(pass_context=True)
-    async def beyondthesea(self,ctx):
-        "Plays Beyond the Sea by Bobby Darin in the voice channel"
-        path = 'voice/beyondthesea.mp3'
-        await self.player(ctx,path,'play')
-
-    @commands.command(pass_context=True)
-    async def minecraftAlpha(self,ctx):
-        "Plays 'Minecraft: Volume Alpha' in the voice channel"
-        path = 'voice/minecraftAlpha.mp3'
-        await self.player(ctx,path,'play')
 
     @commands.command(pass_context=True)
     async def volume(self,ctx):
@@ -144,7 +104,29 @@ class Voice(commands.Cog, name="voice"):
             embedVar.add_field(name="Didn't stop",value="❎ Nothing is playing!", inline=False)
             await ctx.message.channel.send(embed=embedVar)
     
-"""     @commands.command(pass_context=True)
+    @commands.command(pass_context=True)
+    async def play(self,ctx):
+        "Plays the specified mp3 file"
+        message = ctx.message.content.split(" ")
+        print(message)
+        found = False
+        i = 0
+        for i in range(len(available)):
+            print(available[i])
+            if message[1] == available[i]:
+                path = 'voice/'+message[1]+'.mp3'
+                found = True
+                print("Found",path)
+                await self.player(ctx,path,'play')
+            i += 1
+
+        if found != True:
+            embedVar = discord.Embed(color=0xff0000)
+            embedVar.add_field(name="Didn't play",value="❎ "+ message[1]+ " is not a valid filename. Use >help to see available audio files.", inline=False)
+            await ctx.message.channel.send(embed=embedVar)
+
+"""
+    @commands.command(pass_context=True)
     async def pause(self,ctx):
         "Pauses the currently playing audio in voice chat"
         await self.player(ctx,'','pause')

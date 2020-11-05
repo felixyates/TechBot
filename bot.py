@@ -29,8 +29,8 @@ async def on_ready():
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
         return
-    if isinstance(error, CommandInvokeError): # This is to stop flagging an error with the leave() command.
-        return                                # It is probably a good idea to remove it when testing a new module/command.
+    #if isinstance(error, CommandInvokeError): # This is to stop flagging an error with the leave() command.
+        #return                                # It is probably a good idea to remove it when testing a new module/command.
     raise error
 
 @bot.command()
