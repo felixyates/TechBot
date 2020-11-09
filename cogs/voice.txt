@@ -1,3 +1,14 @@
-play <file> - Plays the specified file.
-volume - Sets the volume of the currently playing audio.
-stop - Stops the audio currently playing in voice chat.
+join - Joins a voice channel.
+summon - Summons the bot to a voice channel. If no channel was specified, it joins your channel.
+leave - Clears the queue and leaves the voice channel.
+volume - Sets the volume of the player.
+now - Displays the currently playing song.
+pause - Pauses the currently playing song.
+resume - Resumes a currently paused song.
+stop - Stops playing song and clears the queue.
+skip - Vote to skip a song. The requester can automatically skip. 3 skip votes are needed for the song to be skipped.
+queue / q - Shows the player's queue. You can optionally specify the page to show. Each page contains 10 elements.
+shuffle - Shuffles the queue.
+remove - Removes a song from the queue at a given index.
+loop - Loops the currently playing song. Invoke this command again to unloop the song.
+play / p - Plays a song. If there are songs in the queue, this will be queued until the other songs have finished playing.

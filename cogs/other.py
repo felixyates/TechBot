@@ -31,12 +31,12 @@ voiceCmdsFile = open("cogs/voice.txt")
 voiceCmds = voiceCmdsFile.readlines()
 voiceCmdsFile.close()
 
-availableEmbed = []
+"""availableEmbed = []
 availableEmbedFile = open("voice/availableEmbed.txt")
 availableEmbed = availableEmbedFile.readlines()
-availableEmbedFile.close()
+availableEmbedFile.close()"""
 
-modules = ['Moderation','Text Responder','Voice','Available sound files to play','Other','Owner']
+modules = ['Moderation','Text Responder','Voice','Other','Owner'] #readd 'Available sound files to play'
 
 def converttostr(input_seq, separator):
    # Join all the strings in list
@@ -45,7 +45,7 @@ def converttostr(input_seq, separator):
 
 global helpVar
 helpVar = discord.Embed(color=0x00ff00,title="Commands",description="Prefix"+ "- >")
-helpVar.set_footer(text="Coded by TechLife")
+helpVar.set_footer(text="Coded by TechLife, voice module by Valentin B.")
 i = 0
 for i in range(len(modules)):
     if modules[i] == 'Moderation':
@@ -58,8 +58,8 @@ for i in range(len(modules)):
         currentModule = ''.join(txtCmds)
     elif modules[i] == 'Voice':
         currentModule = ''.join(voiceCmds)
-    elif modules[i] == 'Available sound files to play':
-        currentModule = ''.join(availableEmbed)
+    #elif modules[i] == 'Available sound files to play':
+        #currentModule = ''.join(availableEmbed)
     helpVar.add_field(name=modules[i],value=currentModule, inline=False)
     i += 1
 

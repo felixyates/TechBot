@@ -5,6 +5,10 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from discord.ext.commands import CommandNotFound, CommandInvokeError
 from async_timeout import timeout
+from dominate import document
+from dominate.tags import *
+
+
 
 TOKEN = 'NzcyODU5MzQ0NTUwNDk0MjE5.X6AzWg.rLdgR--eCLiK2d9IYztlUxOsKoA'
 
@@ -24,6 +28,10 @@ async def on_ready():
         if guild.id == 340043063798005780:
             channel = bot.get_channel(773235560944631868)
             await channel.send("The bot is now online")
+            with document(title='TechBot Status') as doc:
+                    p('TechBot is online')
+            with open('/var/www/html/index.html', 'w') as f:
+                f.write(doc.render())
 
 @bot.event
 async def on_command_error(ctx, error):
@@ -52,16 +60,16 @@ async def unload(ctx,extension):
 @bot.command()
 @commands.is_owner()
 async def reload(ctx,extension):
-    bot.unload_extension(f'cogs.{extension}')
-    bot.load_extension(f'cogs.{extension}')
+    bot.reload_extension(f'cogs.{extension}')
     embedVar = discord.Embed(color=0x00ff00)
     embedVar.add_field(name="Successful Reload",value="✅ Successfully reloaded "+ extension, inline=False)
     await ctx.message.channel.send(embed=embedVar,delete_after=5)
 
 bot.remove_command("help")
+bot.remove_command("queue")
 
 for filename in os.listdir('./cogs'):
-    if filename.endswith('.py'):
+    if filename.endswith('.py') and filename != "music.py":
         bot.load_extension(f'cogs.{filename[:-3]}')
 
 bot.run(TOKEN)

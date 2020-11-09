@@ -1,0 +1,5 @@
+hello - Says 'world'.
+add - Adds two numbers together.
+servers - Lists some cool beans servers you should join.
+ping - Returns 'pong' if the bot is online.
+help - Shows this message.
