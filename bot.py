@@ -24,7 +24,8 @@ async def on_ready():
     print(bot.user.name,end=" ")
     print(bot.user.id)
     print('------')
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=">help"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="⚠ Rythm for music, disabled music module as buggy. ⚠"))
+    #await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=">help"))
     async for guild in bot.fetch_guilds():
         if guild.id == 340043063798005780:
             channel = bot.get_channel(773235560944631868)
