@@ -39,7 +39,7 @@ class Moderation(commands.Cog, name="moderation"):
         deleteNo = int(msgList[1])
         if (deleteNo >= 0) and (deleteNo <=100):
             async with channel.typing():
-                messages = await channel.history(limit=deleteNo).flatten()
+                messages = await channel.history(limit=deleteNo+1).flatten()
                 await ctx.channel.delete_messages(messages)
                 #await ctx.channel.send("Deleted %s messages." % cleared,delete_after="5")
                 embedVar = discord.Embed(color=0x00ff00)
