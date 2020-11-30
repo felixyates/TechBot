@@ -80,12 +80,16 @@ class Other(commands.Cog, name="other"):
     @commands.command()
     async def servers(self,ctx):
         "Lists some cool beans servers you should join"
-        await ctx.send("- gaming (#1): https://discord.gg/wWdr9bf\n- gaming (#2): https://discord.gg/bZFFgXnAVZ\n- TechLife (dev's server): https://discord.gg/uzyeYFN")
+        serversVar = discord.Embed(color=0x00ff00,title="Servers",description="Here are some pretty cool beans servers you should join")
+        serversVar.add_field(name="Gaming Servers",value="[The Dead One](https://discord.gg/wWdr9bf)\n[The Active One](https://discord.gg/mgwgcubfnk)")
+        serversVar.add_field(name="The Dev's Server",value="[TechLife](https://discord.gg/uzyeYFN)", inline=False)
+        await ctx.message.channel.send(embed=serversVar)
 
     @commands.command()
     async def ping(self,ctx):
         "Returns 'pong' if the bot is active"
-        await ctx.send("pong")
+        pingVar = discord.Embed(color=0xff0000,title="🏓 Pong!",description=f"Your ping is **{round(self.bot.latency *1000)}** ms!")
+        await ctx.send(embed=pingVar)
 
     @commands.command()
     async def help(self,ctx):

@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 
-global vc_is_paused
+global vc_is_paused, vc
 vc_is_paused = False
 
 # Checks and stores currently available mp3 files
@@ -25,7 +25,6 @@ class Voice(commands.Cog, name="voice"):
 
     @commands.Cog.listener()
     async def player(self,ctx,path,mode):
-        global vc
         if mode == 'play':
             user = ctx.message.author
             channel = user.voice.channel
@@ -108,11 +107,9 @@ class Voice(commands.Cog, name="voice"):
     async def play(self,ctx):
         "Plays the specified mp3 file"
         message = ctx.message.content.split(" ")
-        print(message)
         found = False
         i = 0
         for i in range(len(available)):
-            print(available[i])
             if message[1] == available[i]:
                 path = 'voice/'+message[1]+'.mp3'
                 found = True

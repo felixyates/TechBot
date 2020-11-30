@@ -18,7 +18,7 @@ class Join(commands.Cog, name="join"):
         async for guild in self.bot.fetch_guilds():
             if guild.id == 760406655472369705: # my 'gaming' server
                 channel = self.bot.get_channel(760515090217828382) # welcome channel
-                if server != 'TechLife':
+                if server == 'gaming uno':
                     await channel.send("Welcome to "f"{server}, "f"{ment}!")
 
             elif guild.id == 772057284650074162: # george's 'gaming' server
