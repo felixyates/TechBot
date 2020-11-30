@@ -11,14 +11,6 @@ with open('/home/pi/Documents/token.txt','r') as file:
     file = file.readlines()
     TOKEN = str(file[0])
 
-with open('/home/pi/Documents/emailConfig.txt','r') as file:
-    file = str(file.read()).split(',')
-    host = str(file[0])
-    USERNAME = str(file[1])
-    PASSWORD = str(file[2])
-    toaddr = str(file[3])
-    fromaddr = USERNAME
-
 description = 'TechBot in Python'
 intents = discord.Intents().all()
 intents.voice_states = True
@@ -37,22 +29,13 @@ async def on_ready():
         if guild.id == 340043063798005780:
             channel = bot.get_channel(773235560944631868)
             await channel.send("The bot is now online")
-    context = ssl.create_default_context()
-    msg = """\
-Subject: UP
-
-This message is sent from Python."""
-    with smtplib.SMTP_SSL('techlifeyt.com', 465, context=context) as server:
-        server.login(USERNAME, PASSWORD)
-        server.sendmail(fromaddr, toaddr, msg)
-        print('Sent status email successfully.')
 
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, CommandNotFound):
         return
-    #if isinstance(error, CommandInvokeError): # This is to stop flagging an error with the leave() command.
-        #return                                # It is probably a good idea to remove it when testing a new module/command.
+    if isinstance(error, CommandInvokeError): # This is to stop flagging an error with the leave() command.
+        return                                # It is probably a good idea to remove it when testing a new module/command.
     raise error
 
 @bot.command()
