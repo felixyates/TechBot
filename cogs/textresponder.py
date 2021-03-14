@@ -1,7 +1,6 @@
 import discord
 import os
 import asyncio
-#import youtube_dl
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
