@@ -18,11 +18,13 @@ class Owner(commands.Cog, name="owner"):
     
     @commands.command()
     @commands.is_owner()
-    async def maintenance(self, status: str):
-        if status == "enabled":
-            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="for updates. The bot is currently undergoing maintenance and so some (if not all) commands will be unavailable."))
-        elif status == "disabled":
+    async def maintenance(self, ctx, status: str):
+        if status == "on":
+            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for updates. The bot is currently undergoing maintenance and so some (if not all) commands will be unavailable."))
+        elif status == "off":
             await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for >help"))
+        else:
+            await ctx.channel.send("Enter 'enabled' or 'disabled'.")
 
 def setup(bot):
     bot.add_cog(Owner(bot))

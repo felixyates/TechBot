@@ -3,4 +3,3 @@ shutdown - Shuts the bot down.
 load <extension> - Loads the specified extension.
 unload <extension> - Unloads the specified extension.
 reload <extension> - Reloads the specified extension.
-spam - Sends all images and GIFs in the Text Responder module (takes some time - rate limited).

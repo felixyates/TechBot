@@ -1,1 +1,5 @@
-Simply say the phrases/words found [here](https://pastebin.com/i79sL5zn) and an image or GIF will appear!
+responders - View the text responders active in the server.
+addresponder <type:1 or 2> <trigger>=<response> - Adds a text responder*
+removeresponder <trigger> - Removes the specified text responder*
+*Manage Emojis permission required
+Note: <trigger> and <response> must be separated with =
