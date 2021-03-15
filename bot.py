@@ -7,7 +7,7 @@ from discord.ext.commands import CommandNotFound, CommandInvokeError
 from async_timeout import timeout
 from email.message import EmailMessage
 
-with open('/home/pi/Documents/token.txt','r') as file:
+with open('/home/felixyates1/token.txt','r') as file:
     file = file.readlines()
     TOKEN = str(file[0])
 
