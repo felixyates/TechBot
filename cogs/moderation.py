@@ -1,10 +1,11 @@
 import discord
 import os
 import asyncio
-#import youtube_dl
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
+from modules.embedvars import setembedvar
+from modules.emoji import yep,nope
 
 class Moderation(commands.Cog, name="moderation"):
 
@@ -41,13 +42,10 @@ class Moderation(commands.Cog, name="moderation"):
             async with channel.typing():
                 messages = await channel.history(limit=deleteNo+1).flatten()
                 await ctx.channel.delete_messages(messages)
-                #await ctx.channel.send("Deleted %s messages." % cleared,delete_after="5")
-                embedVar = discord.Embed(color=0x00ff00)
-                embedVar.add_field(name="Deleted messages",value="✅ Deleted %s messages." % deleteNo, inline=False)
+                embedVar = setembedvar("G","Deleted messages",f"{yep} Deleted {deleteNo} messages.",False)
                 await ctx.message.channel.send(embed=embedVar,delete_after=5)
         else:
-            embedVar = discord.Embed(color=0xff0000)
-            embedVar.add_field(name="Didn't delete messages",value="❎ The number of deleted messages must be between 0 and 100!", inline=False)
+            embedVar = setembedvar("R","Didn't delete messages",f"{nope} The number of deleted messages must be between 0 and 100, not {deleteNo}!",False)
             await ctx.message.channel.send(embed=embedVar,delete_after=5)
 
 def setup(bot):
