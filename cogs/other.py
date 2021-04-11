@@ -1,42 +1,10 @@
 import discord
 import os
 import asyncio
-#import youtube_dl
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
-
-modCmds = []
-modCmdsFile = open("cogs/moderation.txt")
-modCmds = modCmdsFile.readlines()
-modCmdsFile.close()
-
-otherCmds = []
-otherCmdsFile = open("cogs/other.txt")
-otherCmds = otherCmdsFile.readlines()
-otherCmdsFile.close()
-
-ownerCmds = []
-ownerCmdsFile = open("cogs/owner.txt")
-ownerCmds = ownerCmdsFile.readlines()
-ownerCmdsFile.close()
-
-txtCmds = []
-txtCmdsFile = open("cogs/textresponder.txt")
-txtCmds = txtCmdsFile.readlines()
-txtCmdsFile.close()
-
-voiceCmds = []
-voiceCmdsFile = open("cogs/voice.txt")
-voiceCmds = voiceCmdsFile.readlines()
-voiceCmdsFile.close()
-
-availableEmbed = []
-availableEmbedFile = open("voice/availableEmbed.txt")
-availableEmbed = availableEmbedFile.readlines()
-availableEmbedFile.close()
-
-modules = ['Moderation','Text Responder','Voice','Available sound files to play','Other','Owner']
+import sqlite3
 
 def converttostr(input_seq, separator):
    # Join all the strings in list
@@ -46,22 +14,25 @@ def converttostr(input_seq, separator):
 global helpVar
 helpVar = discord.Embed(color=0x00ff00,title="Commands",description="Prefix"+ "- >")
 helpVar.set_footer(text="Coded by TechLife.")
-i = 0
-for i in range(len(modules)):
-    if modules[i] == 'Moderation':
-        currentModule = ''.join(modCmds)
-    elif modules[i] == 'Other':
-        currentModule = ''.join(otherCmds)
-    elif modules[i] == 'Owner':
-        currentModule = ''.join(ownerCmds)
-    elif modules[i] == 'Text Responder':
-        currentModule = ''.join(txtCmds)
-    elif modules[i] == 'Voice':
-        currentModule = ''.join(voiceCmds)
-    elif modules[i] == 'Available sound files to play':
-        currentModule = ''.join(availableEmbed)
-    helpVar.add_field(name=modules[i],value=currentModule, inline=False)
-    i += 1
+
+with sqlite3.connect('commands.db') as db:
+    cursor = db.cursor()
+    for i in range(1,7):
+        rows = cursor.execute("SELECT * FROM commands WHERE id = ?",(i,))
+        moduleCmds = []
+        for row in rows:
+            command = row[1]
+            purpose = row[2]
+            moduleCmds.append(f"{command}: {purpose}\n")
+        for x in range(len(moduleCmds)):
+            moduleCmds[x] = moduleCmds[x].replace('"',"").replace(",","\n")
+        print(moduleCmds)
+        displaynames = cursor.execute("SELECT displayname FROM modules WHERE id = ?",(i,))
+        for row in displaynames:
+            displayname = row[0]
+        helpVar.add_field(name=displayname,value=''.join(moduleCmds), inline=False)
+        
+db.close()
 
 class Other(commands.Cog, name="other"):
     def __init__(self, bot):
