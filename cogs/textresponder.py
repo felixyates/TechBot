@@ -27,8 +27,18 @@ class TextResponder(commands.Cog, name="textresponder"):
 
     @commands.Cog.listener()
     async def on_message(self,message):
+
+        # Blocked words. Will call out user if they say one of the words.
+        # To add - slur detection from CSV / text file, send response in an embed
+            # Forward message to admins, etc.
+
         if "nigg" in message.content:
             await message.channel.send("DO NOT SAY THAT!!! "+message.author.mention)
+        
+        # Checks text responder database for guild triggers.
+        # If guild trigger matches [Type 1] (/contains [Type 2]) message, bot will send response.
+        # Type 1 - exact match, Type 2 - contains
+
         db = sqlite3.connect('textresponder.db')
         cursor = db.cursor()
         guildid = message.guild.id
@@ -45,8 +55,8 @@ class TextResponder(commands.Cog, name="textresponder"):
     
     @commands.command()
     @commands.has_permissions(manage_emojis=True)
-    async def addresponder(self,ctx,type:int,request:str): ## Adds the requested text responder for the server. Use '_' for spaces and '=' to separate trigger and response.
-
+    async def addresponder(self,ctx,type:int,request:str):
+        ## Adds the requested text responder for the server. Use '_' for spaces and '=' to separate trigger and response.
         guildid = ctx.guild.id
         db = sqlite3.connect('textresponder.db')
         print("Opened database successfully")
@@ -89,7 +99,8 @@ class TextResponder(commands.Cog, name="textresponder"):
     
     @commands.command()
     @commands.has_permissions(manage_emojis=True)
-    async def removeresponder(self,ctx,responder: str): ## Removes all responders with the given trigger
+    async def removeresponder(self,ctx,responder: str):
+        ## Removes all responders with the given trigger
         guildid = ctx.guild.id
         db = sqlite3.connect('textresponder.db')
         print("Opened database successfully")
@@ -117,8 +128,9 @@ class TextResponder(commands.Cog, name="textresponder"):
         db.close()
 
 
-    @commands.command() ## Retrieves and shows the server's text responders.
+    @commands.command()
     async def responders(self,ctx):
+        ## Retrieves and shows the server's text responders.
         embedVar = listresponders(ctx)
         await ctx.send(embed=embedVar)
 
