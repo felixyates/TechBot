@@ -1,5 +1,0 @@
-+ Responders command - can view all the server's active text responders.
-+ Add Responders command - can add text responders for the server (with the 'Manage Emojis' permission)
-+ Remove Responders command - can remove text responders for the server (with the 'Manage Emojis' permission)
-
-- Spam command - old, annoying, took too long
