@@ -1,5 +1,0 @@
-*Note: these commands can only be used by the bot's owner.*
-shutdown - Shuts the bot down.
-load <extension> - Loads the specified extension.
-unload <extension> - Unloads the specified extension.
-reload <extension> - Reloads the specified extension.
