@@ -5,7 +5,9 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from discord.ext.commands import CommandNotFound, CommandInvokeError
 from async_timeout import timeout
-from email.message import EmailMessage
+from modules.emoji import yep,nope,tada_animated
+from modules.embedvars import setembedvar
+import sqlite3
 
 with open('/home/felixyates1/token.txt','r') as file:
     file = file.readlines()
@@ -26,57 +28,56 @@ async def on_ready():
     print('------')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for >help"))
     async for guild in bot.fetch_guilds():
-        if guild.id == 340043063798005780:
-            channel = bot.get_channel(773235560944631868)
-            await channel.send("The bot is now online")
+        if guild.id == 788802564912709692:
+            channel = bot.get_channel(788802645070053377)
+            onlineVar = setembedvar("G","Bot Online",f"{tada_animated} TechBot is back online and reporting for duty!",False)
+            await channel.send(embed = onlineVar)
 
 @bot.event
 async def on_command_error(ctx, error):
-    if isinstance(error, CommandNotFound):
-        return
-    if isinstance(error, CommandInvokeError): # This is to stop flagging an error with the leave() command.
-        return                                # It is probably a good idea to remove it when testing a new module/command.
+    #if isinstance(error, CommandNotFound):
+        #return
+    #if isinstance(error, CommandInvokeError): # This is to stop flagging an error with the leave() command.
+       # return                                # It is probably a good idea to remove it when testing a new module/command.
     raise error
 
 @bot.command()
 @commands.is_owner()
 async def load(ctx,extension):
-    bot.load_extension(f'cogs.{extension}')
-    embedVar = discord.Embed(color=0x00ff00)
-    embedVar.add_field(name="Successful Load",value="✅ Successfully loaded "+ extension, inline=False)
-    await ctx.message.channel.send(embed=embedVar)
+    try:
+        bot.load_extension(f'cogs.{extension}')
+        embedVar = setembedvar("G","Successful Load",f"{yep} Successfully loaded "+ extension,False)
+        await ctx.message.channel.send(embed=embedVar)
+    except:
+        embedVar = setembedvar("R","Unsuccessful Load",f"{nope} Couldn't load "+ extension,False)
+        await ctx.message.channel.send(embed=embedVar)
 
 @bot.command()
 @commands.is_owner()
 async def unload(ctx,extension):
-    bot.unload_extension(f'cogs.{extension}')
-    embedVar = discord.Embed(color=0x00ff00)
-    embedVar.add_field(name="Successful Unload",value="✅ Successfully unloaded "+ extension, inline=False)
-    await ctx.message.channel.send(embed=embedVar)
+    try:
+        bot.unload_extension(f'cogs.{extension}')
+        embedVar = setembedvar("G","Successful Unload",f"{yep} Successfully unloaded "+ extension,False)
+        await ctx.message.channel.send(embed=embedVar)
+    except:
+        embedVar = setembedvar("R","Unsuccessful Unload",f"{nope} Couldn't unload "+ extension,False)
+        await ctx.message.channel.send(embed=embedVar)
 
 @bot.command()
 @commands.is_owner()
 async def reload(ctx,extension):
-    bot.reload_extension(f'cogs.{extension}')
-    embedVar = discord.Embed(color=0x00ff00)
-    embedVar.add_field(name="Successful Reload",value="✅ Successfully reloaded "+ extension, inline=False)
-    await ctx.message.channel.send(embed=embedVar)
+    try:
+        bot.reload_extension(f'cogs.{extension}')
+        embedVar = setembedvar("G","Successful Reload",f"{yep} Successfully reloaded "+ extension,False)
+        await ctx.message.channel.send(embed=embedVar)
+    except:
+        embedVar = setembedvar("R","Unsuccessful Reload",f"{nope} Couldn't reload "+ extension,False)
+        await ctx.message.channel.send(embed=embedVar)
 
 bot.remove_command("help")
 
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py') and filename != 'troll.py':
         bot.load_extension(f'cogs.{filename[:-3]}')
-
-""" @bot.command()
-@commands.is_owner()
-async def restart(ctx):
-    await ctx.message.add_reaction('✅')
-    await bot.clear()
-    await bot.logout()
-    cmd = 'python3 bot.py'
-    subprocess.run(cmd, shell=True)   
-    time.sleep(0.2)
-    quit() """
 
 bot.run(TOKEN)
