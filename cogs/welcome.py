@@ -1,12 +1,8 @@
-import discord
-import os
-import asyncio
+import discord, os, asyncio, sqlite3, time
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.emoji import nope,yep,tada_animated
-import sqlite3
-import time
 from modules.embedvars import setembedvar
 
 global listening
@@ -15,7 +11,7 @@ listening = False
 class ChannelDoesNotExist(Exception):
     pass
 
-class Join(commands.Cog, name="join"):
+class Welcome(commands.Cog, name="welcome"):
 
     def __init__(self, bot):
         self.bot = bot
@@ -238,4 +234,4 @@ class Join(commands.Cog, name="join"):
                 print("Couldn't send welcome message.")
 
 def setup(bot):
-    bot.add_cog(Join(bot))
+    bot.add_cog(Welcome(bot))
