@@ -41,11 +41,8 @@ def getAccessToken(client_id, client_secret):
     authHeader['Authorization'] = "Basic " + base64_message
     authData['grant_type'] = "client_credentials"
     res = requests.post(authURL, headers=authHeader, data=authData)
-    print(res)
 
     responseObject = res.json()
-    #print(json.dumps(responseObject, indent=2))
-
     accessToken = responseObject['access_token']
     return accessToken
 
@@ -54,7 +51,6 @@ def getAccessToken(client_id, client_secret):
 def getSpotifyInfo(accessToken,type,id):
 
     endpoint = f"https://api.spotify.com/v1/{type}/{id}"
-    print(endpoint)
 
     getHeader = {
         "Authorization": "Bearer " + accessToken
@@ -134,8 +130,6 @@ def spotifyArtistEmbed(artist,message):
 
 def spotifyPlaylistEmbed(playlist,message):
 
-    replaceList = [['&amp;','&'],['&#x2F;','/']]
-
     # Setting all variables using playlist object
 
     name = playlist["name"]
@@ -147,17 +141,18 @@ def spotifyPlaylistEmbed(playlist,message):
     imageurl = imageurl[(len(imageurl)-1)]["url"]
 
     # Cleaning up playlist description (Spotify handles characters weirdly).
+        # Need to work on this - it doesn't work.
+    
+    replaceList = [['&amp;','&'],['&#x2F;','/']]
 
     if description.startswith('<a href='):
         description = ""
     else:
         description = description.split('<a href="')
         description = str(description[0])
-        print(description)
         for i in range(len(replaceList)):
             if replaceList[i][0] in description:
                 description.replace(replaceList[i][0], replaceList[i][1])
-                print(description)
     
     # Getting playlist owner information.
 
@@ -217,7 +212,7 @@ def spotifyAlbumEmbed(album,message):
             formattedTrackList += f"{i+1}. `{str(trackList[i])}`" + "\n"
 
     if len(trackList) > 5:
-        remainingTracks = (len(trackList)) - 5
+        remainingTracks = albumTracks - 5
         formattedTrackList += f"+ {remainingTracks} more songs..."
 
     # Getting artist information.
@@ -252,6 +247,8 @@ def spotifyAlbumEmbed(album,message):
     authorName = message.author.display_name
     authorAvatar = message.author.avatar_url
 
+    # Setting up embed
+
     embed=discord.Embed(title=albumName, url=albumURL, color=spotifyColour)
     embed.set_author(name=mainArtistName, url=mainArtistURL, icon_url=mainArtist_icon)
     embed.set_thumbnail(url=album_icon)
@@ -279,6 +276,7 @@ def spotifyTrackEmbed(track,message):
 
     name = track["name"]
     url = track["external_urls"]["spotify"]
+    preview_url = track["preview_url"]
 
     # Calculating track length and formatting it appropriately.
 
@@ -296,7 +294,7 @@ def spotifyTrackEmbed(track,message):
     artists = track["artists"]
     artistsName = []
 
-    
+
     mainArtist = track["artists"][0]
     mainArtistID = mainArtist["id"]
     mainArtistName = mainArtist["name"]
@@ -338,6 +336,9 @@ def spotifyTrackEmbed(track,message):
     embed.add_field(name="Duration", value=duration, inline=True)
     embed.add_field(name="Album", value=f"[{album_name}](https://open.spotify.com/album/{album['uri'].strip('spotify:album:')}/)", inline=True)
 
+    if preview_url is not None:
+        embed.add_field(name="Preview", value=f"[Expires after 1 day]({preview_url})", inline=True)
+
     # Handling multiple artists (if present).
 
     artistVar = ""
@@ -359,19 +360,26 @@ class Music(commands.Cog, name="music"):
 
     @commands.Cog.listener()
     async def on_message(self,message):
-        guild = 788802564912709692 # techbot
-        channel = 825351987495043082 # music
+        guild = 804016290972172378 # techsmp
+        channel = 825330039884480522 # music
         if (message.guild.id == guild) and (message.channel.id == channel) and (message.author.bot == False):
             
-            # Determines data source to pull track / playlist info from
+            # Determines data source to pull info from
 
-            if message.content.startswith("https://open.spotify.com/"):
+            spotifyURL = "https://open.spotify.com/"
+            youtubeURL = "https://youtube.com/"
+
+            if message.content.startswith(spotifyURL):
                 source = "spotify"
-            elif message.content.startswith("https://youtube.com/"):
+
+            elif message.content.startswith(youtubeURL):
                 source = "youtube"
-            else:
+
+            elif message.content.startswith("https://") and not (message.content.startswith(spotifyURL) or message.content.startswith(youtubeURL)):
                 source = "unsupported"
+
                 unsupportedVar = setembedvar("R","Unsupported Source",f"{nope} Please send only YouTube or Spotify URLs."+"\nSee below for examples of valid links:",False)
+
                 spotifyExamples = """`https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC`
                 `https://open.spotify.com/album/6N9PS4QXF1D0OWPk0Sxtb4`
                 `https://open.spotify.com/artist/0gxyHStUsqpMadRV0Di1Qt`
@@ -379,18 +387,22 @@ class Music(commands.Cog, name="music"):
                 *Note: don't worry about the `?si=` bit at the end of your URL; it doesn't matter.*"""
                 youtubeExamples = """`https://www.youtube.com/watch?v=dQw4w9WgXcQ`
                 `https://www.youtube.com/playlist?list=PLi9drqWffJ9FWBo7ZVOiaVy0UQQEm4IbP`"""
+
                 unsupportedVar.add_field(name="Spotify",value=spotifyExamples,inline=False)
                 unsupportedVar.add_field(name="YouTube",value=youtubeExamples,inline=False)
+
                 await message.channel.send(embed=unsupportedVar,delete_after=20)
                 
 
             if source == "spotify":
+
                 if "https://open.spotify.com/playlist/" in message.content:
                     playlist_id = message.content.replace("https://open.spotify.com/playlist/","")
                     accessToken = getAccessToken(client_id, client_secret)
                     playlist = getSpotifyInfo(accessToken,"playlists",playlist_id)
                     playlistEmbed = spotifyPlaylistEmbed(playlist,message)
                     botMsg = await message.channel.send(embed=playlistEmbed)
+
                 elif "https://open.spotify.com/track/" in message.content:
                     track_id = message.content.replace("https://open.spotify.com/track/","")
                     track_id = track_id.split("?")[0]
@@ -398,6 +410,7 @@ class Music(commands.Cog, name="music"):
                     track = getSpotifyInfo(accessToken,"tracks",track_id)
                     trackEmbed = spotifyTrackEmbed(track,message)
                     botMsg = await message.channel.send(embed=trackEmbed)
+
                 elif "https://open.spotify.com/artist/" in message.content:
                     artist_id = message.content.replace("https://open.spotify.com/artist/","")
                     artist_id = artist_id.split("?")[0]
@@ -405,6 +418,7 @@ class Music(commands.Cog, name="music"):
                     artist = getSpotifyInfo(accessToken,"artists",artist_id)
                     artistEmbed = spotifyArtistEmbed(artist,message)
                     botMsg = await message.channel.send(embed=artistEmbed)
+
                 elif "https://open.spotify.com/album/" in message.content:
                     album_id = message.content.replace("https://open.spotify.com/album/","")
                     album_id = album_id.split("?")[0]
@@ -412,10 +426,13 @@ class Music(commands.Cog, name="music"):
                     album = getSpotifyInfo(accessToken,"albums",album_id)
                     albumEmbed = spotifyAlbumEmbed(album,message)
                     botMsg = await message.channel.send(embed=albumEmbed)
+
             elif source == "youtube":
+                await message.channel.send(embed=setembedvar("R","YouTube support on the way.",f"{nope} YouTube URLs are not currently supported, though I'm working on it!",False),delete_after=5)
                 if "https://www.youtube.com/playlist?list=" in message.content:
                     playlist_id = message.content.replace("https://www.youtube.com/playlist?list=","")
                     ## Need to finish
+
             await message.delete()
             await botMsg.add_reaction(upvote)
             await botMsg.add_reaction(downvote)

@@ -1,13 +1,10 @@
-import discord, os, asyncio, random, sys
-import smtplib, ssl, utils
-import subprocess, time
+import discord, os, asyncio, sqlite3
 from discord.ext import commands
 from discord.ext.commands import has_permissions
-from discord.ext.commands import CommandNotFound, CommandInvokeError
+from discord.ext.commands import CommandNotFound
 from async_timeout import timeout
 from modules.emoji import yep,nope,tada_animated
 from modules.embedvars import setembedvar
-import sqlite3
 
 with open('/home/felixyates1/token.txt','r') as file:
     file = file.readlines()
@@ -35,10 +32,8 @@ async def on_ready():
 
 @bot.event
 async def on_command_error(ctx, error):
-    #if isinstance(error, CommandNotFound):
-        #return
-    #if isinstance(error, CommandInvokeError): # This is to stop flagging an error with the leave() command.
-       # return                                # It is probably a good idea to remove it when testing a new module/command.
+    if isinstance(error, CommandNotFound):
+        return
     raise error
 
 @bot.command()
@@ -77,7 +72,7 @@ async def reload(ctx,extension):
 bot.remove_command("help")
 
 for filename in os.listdir('./cogs'):
-    if filename.endswith('.py') and filename != 'troll.py':
+    if filename.endswith('.py'):
         bot.load_extension(f'cogs.{filename[:-3]}')
 
 bot.run(TOKEN)
