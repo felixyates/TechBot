@@ -18,10 +18,10 @@ spotifyColour = 0x1db954
 youtubeColour = 0xe62117
 
 
-with open('/home/pi/spotify_secret.txt','r') as file:
+with open('/home/felixyates1/spotify_secret.txt','r') as file:
     client_secret = str(file.readlines()[0])
 
-with open('/home/pi/spotify_client_id.txt','r') as file:
+with open('/home/felixyates1/spotify_client_id.txt','r') as file:
     client_id = str(file.readlines()[0])
 
 
@@ -392,6 +392,9 @@ class Music(commands.Cog, name="music"):
                 unsupportedVar.add_field(name="YouTube",value=youtubeExamples,inline=False)
 
                 await message.channel.send(embed=unsupportedVar,delete_after=20)
+            
+            else:
+                source = "none"
                 
 
             if source == "spotify":
@@ -433,9 +436,11 @@ class Music(commands.Cog, name="music"):
                     playlist_id = message.content.replace("https://www.youtube.com/playlist?list=","")
                     ## Need to finish
 
-            await message.delete()
-            await botMsg.add_reaction(upvote)
-            await botMsg.add_reaction(downvote)
+            if source != "none":
+                await message.delete()
+                if source != "unsupported":
+                    await botMsg.add_reaction(upvote)
+                    await botMsg.add_reaction(downvote)
 
 def setup(bot):
     bot.add_cog(Music(bot))
