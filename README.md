@@ -5,8 +5,8 @@ Just a simple Discord bot that I'm trying to build :) I only intend for it to be
 ## Features
 - [x] Text responder. The bot responds to certain messages with an image.
 - [x] Slur detector. Block out the -ists and -phobes.
-- [ ] Custom welcome messages.
-- [ ] Music recommendations.
+- [x] Custom welcome messages.
+- [x] Music recommendations (using Spotify API, YouTube is WIP!)
 - [ ] More on the way :)
 
 ## Available commands *(prefix: >)*
