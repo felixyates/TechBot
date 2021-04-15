@@ -12,8 +12,7 @@ with open("cogs/servers.txt","r") as serversfile: # guildid,modchannelid
     servers = serversfile.readlines()
     for i in range(len(servers)):
         servers[i] = servers[i].strip("\n").split(",")
-        print(f"Server: {servers[i][0]}")
-        print(f"Mod Channel: {servers[i][1]}")
+        print(f"Server: {servers[i][0]}, Mod Channel: {servers[i][1]}")
 
 with open("cogs/blocklist.txt","r") as slurfile:
     blockedwords = slurfile.readlines()
