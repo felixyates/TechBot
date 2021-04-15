@@ -4,6 +4,7 @@ from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar
 from modules.emoji import upvote,downvote,nope
+from modules.serverJSON import loadServerJson
 
 ## Send a YouTube / Spotify URL and TechBot will react with upvote and downvote
 ## Future versions will delete the original message and send an embed with:
@@ -24,6 +25,74 @@ with open('/home/felixyates1/spotify_secret.txt','r') as file:
 with open('/home/felixyates1/spotify_client_id.txt','r') as file:
     client_id = str(file.readlines()[0])
 
+with open('/home/felixyates1/youtube_api_key.txt','r') as file:
+    global yt_api_key
+    yt_api_key = str(file.readlines()[0])
+
+
+def durationFormatter(duration_ms):
+    # Calculating track/video length and formatting it appropriately.
+
+    durationSecs = (duration_ms/1000)
+    durationMins = durationSecs // 60
+    remainderSecs = round(durationSecs - (durationMins*60))
+
+    if remainderSecs < 10:
+        remainderSecs = f"0{remainderSecs}"
+
+    if durationMins >= 60:
+        durationHrs = durationMins // 60
+        remainderMins = round(durationMins - (durationHrs*60))
+        duration = f"{durationHrs}:{remainderMins}:{remainderSecs}"
+    else:
+        duration = f"{int(durationMins)}:{remainderSecs}"
+
+    return duration
+
+def getYouTubeData(id,type):
+    if type == "video":
+        endpoint = f"https://www.googleapis.com/youtube/v3/videos?part=statistics&id={id}&key={yt_api_key}"
+    elif type == "channel":
+        endpoint = f"https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics&id={id}&key={yt_api_key}"
+    res = requests.get(endpoint)
+    print(res)
+    responseObject = res.json()
+    print(responseObject)
+    return responseObject
+
+def youtubeVideoEmbed(video_id,message):
+
+    video = getYouTubeData(video_id,"video")
+
+    snippet = video["items"][0]["snippet"]
+    title = snippet["title"]
+    video_url = f"https://www.youtube.com/watch?v={video_id}"
+    thumbnail = snippet["thumbnails"]["url"]
+    duration = video["items"][0]["contentDetails"]["duration"]
+    channelID = video["channel"]
+
+    channel = getYouTubeData(channelID,"channel")
+
+    channelName = channel["title"]
+    channelIcon = channel["thumbnails"]["url"]
+    channelURL = f"https://www.youtube.com/channel/{channelID}"
+
+    stats = video["statistics"]
+
+    views = stats["viewCount"]
+    likes = stats["likeCount"]
+    dislikes = stats["dislikeCount"]
+
+    embed=discord.Embed(title=title, url=video_url, color=youtubeColour)
+    embed.set_author(name=channelName, url=channelURL, icon_url=channelIcon)
+    embed.set_thumbnail(url=thumbnail)
+    embed.add_field(name="Views", value=views, inline=True)
+    embed.add_field(name="Likes", value=likes, inline=True)
+    embed.add_field(name="Dislikes", value=dislikes, inline=True)
+    embed.add_field(name="Duration", value=duration, inline=True)
+    embed.set_footer(text=f"Video recommended by {message.author.display_name}",icon_url=message.author.avatar_url)
+
+    return embed
 
 def getAccessToken(client_id, client_secret):
 
@@ -249,9 +318,7 @@ def spotifyAlbumEmbed(album,message):
 
     # Setting up embed
 
-    embed=discord.Embed(title=albumName, url=albumURL, color=spotifyColour)
-    embed.set_author(name=mainArtistName, url=mainArtistURL, icon_url=mainArtist_icon)
-    embed.set_thumbnail(url=album_icon)
+    embed = setembedvar(spotifyColour, albumName, url=albumURL, author=mainArtistName, author_url=mainArtistURL, author_icon=mainArtist_icon, thumbnail=album_icon)
     embed.add_field(name="Release Date", value=albumReleaseDate, inline=True)
     embed.add_field(name="Tracks", value=albumTracks, inline=True)
     embed.add_field(name="Track List", value=formattedTrackList, inline=False)
@@ -329,10 +396,8 @@ def spotifyTrackEmbed(track,message):
     album_image = album_image[(len(album_image)-1)]["url"]
 
     # Setting up embed.
-
-    embed=discord.Embed(title=name, url=url, color=spotifyColour)
-    embed.set_author(name=mainArtistName, url=mainArtistURL, icon_url=mainArtist_icon)
-    embed.set_thumbnail(url=album_image)
+    
+    embed = setembedvar(spotifyColour, name, url=url, author=mainArtistName, author_url=mainArtistURL, author_icon=mainArtist_icon, thumbnail=album_image)
     embed.add_field(name="Duration", value=duration, inline=True)
     embed.add_field(name="Album", value=f"[{album_name}](https://open.spotify.com/album/{album['uri'].strip('spotify:album:')}/)", inline=True)
 
@@ -360,14 +425,18 @@ class Music(commands.Cog, name="music"):
 
     @commands.Cog.listener()
     async def on_message(self,message):
-        guild = 804016290972172378 # techsmp
-        channel = 825330039884480522 # music
-        if (message.guild.id == guild) and (message.channel.id == channel) and (message.author.bot == False):
+        
+        servers = loadServerJson()
+        music = servers[str(message.guild.id)]["music"]
+        enabled = music["enabled"]
+        channel = music["channel"]
+
+        if (message.channel.id == int(channel)) and (enabled == 1) and (message.author.bot == False):
             
             # Determines data source to pull info from
 
             spotifyURL = "https://open.spotify.com/"
-            youtubeURL = "https://youtube.com/"
+            youtubeURL = "https://www.youtube.com/"
 
             if message.content.startswith(spotifyURL):
                 source = "spotify"
@@ -431,9 +500,18 @@ class Music(commands.Cog, name="music"):
                     botMsg = await message.channel.send(embed=albumEmbed)
 
             elif source == "youtube":
+
                 await message.channel.send(embed=setembedvar("R","YouTube support on the way.",f"{nope} YouTube URLs are not currently supported, though I'm working on it!",False),delete_after=5)
+
                 if "https://www.youtube.com/playlist?list=" in message.content:
                     playlist_id = message.content.replace("https://www.youtube.com/playlist?list=","")
+                    ## Need to finish
+
+                elif "https://www.youtube.com/watch?v=" in message.content:
+                    video_id = message.content.replace("https://www.youtube.com/watch?v=","")
+                    video_id = (video_id.split("&"))[0]
+                    videoEmbed = youtubeVideoEmbed(video_id,message)
+                    botMsg = await message.channel.send(embed=videoEmbed)
                     ## Need to finish
 
             if source != "none":
