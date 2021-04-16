@@ -31,14 +31,14 @@ class GuildSetup(commands.Cog, name="guildsetup"):
             # 0 disables the feature
 
         welcome["enabled"] = 0
-        welcome["message"] = ""
-        welcome["channel"] = ""
+        welcome["message"] = "Welcome to the {servername} server, {member}!"
+        welcome["channel"] = "1"
 
         slurdetector["enabled"] = 0
-        slurdetector["channel"] = ""
+        slurdetector["channel"] = "1"
 
         music["enabled"] = 0
-        music["channel"] = ""
+        music["channel"] = "1"
 
         server["prefix"] = ">"
 

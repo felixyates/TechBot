@@ -98,26 +98,33 @@ class Administration(commands.Cog, name="administration"):
     @commands.has_permissions(administrator = True)
     async def music(self, ctx, state):
 
-        if state == "on" or state == "off":
+        servers = loadServerJson()
+        server = servers[str(ctx.guild.id)]
 
-            servers = loadServerJson()
+        if server["music"]["channel"] != "1":
 
-            if state == "on":
+            if state == "on" or state == "off":
+                
+                if state == "on":
 
-                state = 1
-                await ctx.send(embed = setembedvar("G","Music Enabled",f"{yep} Successfully enabled music module."))
+                    state = 1
+                    await ctx.send(embed = setembedvar("G","Music Enabled",f"{yep} Successfully enabled music module."))
 
-            elif state == "off":
+                elif state == "off":
 
-                state = 0
-                await ctx.send(embed = setembedvar("G","Music Disabled",f"{yep} Successfully disabled music module."))
+                    state = 0
+                    await ctx.send(embed = setembedvar("G","Music Disabled",f"{yep} Successfully disabled music module."))
 
-            servers[str(ctx.guild.id)]["music"]["enabled"] = state
-            updateServerJson(servers)
+                servers[str(ctx.guild.id)]["music"]["enabled"] = state
+                updateServerJson(servers)
 
+            else:
+
+                await ctx.send(embed = setembedvar("R","Incorrect Syntax",f"{nope} Enter 'on' or 'off'."))
+        
         else:
 
-            await ctx.send(embed = setembedvar("R","Music Enabled",f"{yep} Successfully enabled music module."))
+            await ctx.send(embed = setembedvar("R","Music Channel Unset",f"{nope} Set up the music module first ({server['prefix']}musicsetup <music-channel-id>)"))
     
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -306,6 +313,70 @@ class Administration(commands.Cog, name="administration"):
 
         if channelExists == False and shouldContinue == True:
             await ctx.send(embed=setembedvar("R","Channel does not exist",f"{nope} Make sure you entered the right channel ID."))
+
+    @commands.command()
+    @commands.has_permissions(administrator = True)
+    async def slurdetector(self, ctx, state):
+
+        servers = loadServerJson()
+        server = servers[str(ctx.guild.id)]
+
+        if server["slurdetector"]["channel"] != "1":
+
+            if state == "on" or state == "off":
+                
+                if state == "on":
+
+                    state = 1
+                    await ctx.send(embed = setembedvar("G","Slur Detector Enabled",f"{yep} Successfully enabled slur detector module."))
+
+                elif state == "off":
+
+                    state = 0
+                    await ctx.send(embed = setembedvar("G","Slur Detector Disabled",f"{yep} Successfully disabled slur detector module."))
+
+                servers[str(ctx.guild.id)]["slurdetector"]["enabled"] = state
+                updateServerJson(servers)
+
+            else:
+
+                await ctx.send(embed = setembedvar("R","Incorrect Syntax",f"{nope} Enter 'on' or 'off'."))
+        
+        else:
+
+            await ctx.send(embed = setembedvar("R","Slur Detector Moderation Channel Unset",f"{nope} Set up the slur detector module first"+"\n"+f"({server['prefix']}slurdetectorsetup <moderation-channel-id>)"))
+    
+    @commands.command()
+    @commands.has_permissions(administrator = True)
+    async def welcome(self, ctx, state):
+
+        servers = loadServerJson()
+        server = servers[str(ctx.guild.id)]
+
+        if server["welcome"]["channel"] != "1":
+
+            if state == "on" or state == "off":
+                
+                if state == "on":
+
+                    state = 1
+                    await ctx.send(embed = setembedvar("G","Welcome Module Enabled",f"{yep} Successfully enabled welcome module."))
+
+                elif state == "off":
+
+                    state = 0
+                    await ctx.send(embed = setembedvar("G","Welcome Module Disabled",f"{yep} Successfully disabled welcome module."))
+
+                servers[str(ctx.guild.id)]["welcome"]["enabled"] = state
+                updateServerJson(servers)
+
+            else:
+
+                await ctx.send(embed = setembedvar("R","Incorrect Syntax",f"{nope} Enter 'on' or 'off'."))
+        
+        else:
+
+            await ctx.send(embed = setembedvar("R","Welcome Channel Unset",f"{nope} Set up the welcome detector module first"+"\n"+f"({server['prefix']}welcome <welcome-channel-id>)"))
 
 def setup(bot):
     bot.add_cog(Administration(bot))
