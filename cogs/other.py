@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar,requestedbyfooter
+from modules.serverJSON import loadServerJson
 
 def converttostr(input_seq, separator):
    # Join all the strings in list
@@ -65,6 +66,39 @@ class Other(commands.Cog, name="other"):
             helpVar.add_field(name="Do you like Minecraft?", value="[Check out the TechSMP](https://www.techlifeyt.com/techsmp)", inline=False)
         helpVar = requestedbyfooter(helpVar,ctx.message)
         await ctx.message.channel.send(embed=helpVar)
+    
+    @commands.command()
+    async def serverinfo(self, ctx):
+
+        embed = setembedvar("G","Server Info",thumbnail=ctx.guild.icon_url)
+
+        server = loadServerJson()[str(ctx.guild.id)]
+        welcome = server["welcome"]
+        music = server["music"]
+        slurDetector = server["slurdetector"]
+
+        enabledList = []
+
+        enabledList.append(welcome['enabled'])
+        enabledList.append(music['enabled'])
+        enabledList.append(slurDetector['enabled'])
+
+        for i in range(len(enabledList)):
+            if enabledList[i] == 0:
+                enabledList[i] = "`Disabled`"
+            elif enabledList[i] == 1:
+                enabledList[i] = "`Enabled`"
+
+        moduleField = f"""Welcome: {enabledList[0]}
+        Music: {enabledList[1]}
+        Slur Detector: {enabledList[2]}"""
+
+        embed.add_field(name="Name", value=ctx.guild.name)
+        embed.add_field(name="Members", value=ctx.guild.member_count)
+        embed.add_field(name="Modules", value=moduleField, inline=False)
+        embed = requestedbyfooter(embed,ctx.message)
+
+        await ctx.send(embed = embed)
 
 def setup(bot):
     bot.add_cog(Other(bot))

@@ -6,6 +6,7 @@ from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar
 from modules.emoji import tada_animated, dnd, online, yep, nope
+from modules.serverJSON import loadServerJson
 
 global maintenanceStatus, onlineVar, statusChannel
 onlineVar = setembedvar("G",f"{online} Online",f"TechBot is back online and reporting for duty!",False)
@@ -87,7 +88,36 @@ class Owner(commands.Cog, name="owner"):
             await channel.send(embed = onlineVar)
 
         else:
-            await ctx.channel.send(embed = setembedvar("R",f"Incorrect command usage.",f"{nope} Enter 'on' or 'off'."))
+            await ctx.channel.send(embed = setembedvar("R","Incorrect command usage.",f"{nope} Enter 'on' or 'off'."))
+        
+    @commands.command()
+    @commands.is_owner()
+    async def botservers(self, ctx):
+
+        serverEmbed = setembedvar("G","Servers")
+        servers = loadServerJson()
+
+        async for guild in self.bot.fetch_guilds():
+            guild = self.bot.get_guild(guild.id)
+            server = servers[str(guild.id)]
+            serverMsg = f"""ID: `{guild.id}`
+            Prefix: `{server["prefix"]}`
+            Welcome: `{server["welcome"]["enabled"]}`, `{server["welcome"]["channel"]}`, `{server["welcome"]["message"]}`
+            Slur Detector : `{server["slurdetector"]["enabled"]}`, `{server["slurdetector"]["channel"]}`
+            Music: `{server["music"]["enabled"]}`, `{server["music"]["channel"]}`"""
+            serverEmbed.add_field(name=guild.name,value=serverMsg)
+            server = servers[str(guild.id)]
+
+        await ctx.send(embed = serverEmbed)
+    
+    @commands.command()
+    @commands.is_owner()
+    async def leaveserver(self, ctx, id: int):
+
+        to_leave = self.bot.get_guild(id)
+        await to_leave.leave()
+        
+            
 
 def setup(bot):
     bot.add_cog(Owner(bot))
