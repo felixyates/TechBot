@@ -19,13 +19,13 @@ spotifyColour = 0x1db954
 youtubeColour = 0xe62117
 
 
-with open('/home/pi/spotify_secret.txt','r') as file:
+with open('/home/felixyates1/spotify_secret.txt','r') as file:
     client_secret = str(file.readlines()[0])
 
-with open('/home/pi/spotify_client_id.txt','r') as file:
+with open('/home/felixyates1/spotify_client_id.txt','r') as file:
     client_id = str(file.readlines()[0])
 
-with open('/home/pi/youtube_api_key.txt','r') as file:
+with open('/home/felixyates1/youtube_api_key.txt','r') as file:
     yt_api_key = str(file.readlines()[0])
 
 
