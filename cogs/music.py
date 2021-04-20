@@ -19,14 +19,13 @@ spotifyColour = 0x1db954
 youtubeColour = 0xe62117
 
 
-with open('/home/felixyates1/spotify_secret.txt','r') as file:
+with open('/home/pi/spotify_secret.txt','r') as file:
     client_secret = str(file.readlines()[0])
 
-with open('/home/felixyates1/spotify_client_id.txt','r') as file:
+with open('/home/pi/spotify_client_id.txt','r') as file:
     client_id = str(file.readlines()[0])
 
-with open('/home/felixyates1/youtube_api_key.txt','r') as file:
-    global yt_api_key
+with open('/home/pi/youtube_api_key.txt','r') as file:
     yt_api_key = str(file.readlines()[0])
 
 
@@ -425,100 +424,101 @@ class Music(commands.Cog, name="music"):
 
     @commands.Cog.listener()
     async def on_message(self,message):
-        
-        servers = loadServerJson()
-        music = servers[str(message.guild.id)]["music"]
-        enabled = music["enabled"]
-        channel = music["channel"]
 
-        if (message.channel.id == int(channel)) and (enabled == 1) and (message.author.bot == False):
+        if message.author.bot == False:
+
+            servers = loadServerJson()
+            music = servers[str(message.guild.id)]["music"]
+            enabled = music["enabled"]
+            channel = music["channel"]
+
+            if (message.channel.id == int(channel)) and (enabled == 1):
             
-            # Determines data source to pull info from
+                # Determines data source to pull info from
 
-            spotifyURL = "https://open.spotify.com/"
-            youtubeURL = "https://www.youtube.com/"
+                spotifyURL = "https://open.spotify.com/"
+                youtubeURL = "https://www.youtube.com/"
 
-            if message.content.startswith(spotifyURL):
-                source = "spotify"
+                if message.content.startswith(spotifyURL):
+                    source = "spotify"
 
-            elif message.content.startswith(youtubeURL):
-                source = "youtube"
+                elif message.content.startswith(youtubeURL):
+                    source = "youtube"
 
-            elif message.content.startswith("https://") and not (message.content.startswith(spotifyURL) or message.content.startswith(youtubeURL)):
-                source = "unsupported"
+                elif message.content.startswith("https://") and not (message.content.startswith(spotifyURL) or message.content.startswith(youtubeURL)):
+                    source = "unsupported"
 
-                unsupportedVar = setembedvar("R","Unsupported Source",f"{nope} Please send only YouTube or Spotify URLs."+"\nSee below for examples of valid links:",False)
+                    unsupportedVar = setembedvar("R","Unsupported Source",f"{nope} Please send only YouTube or Spotify URLs."+"\nSee below for examples of valid links:",False)
 
-                spotifyExamples = """`https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC`
-                `https://open.spotify.com/album/6N9PS4QXF1D0OWPk0Sxtb4`
-                `https://open.spotify.com/artist/0gxyHStUsqpMadRV0Di1Qt`
-                `https://open.spotify.com/playlist/6piHLVTmzq8nTix2wIlM8x`
-                *Note: don't worry about the `?si=` bit at the end of your URL; it doesn't matter.*"""
-                youtubeExamples = """`https://www.youtube.com/watch?v=dQw4w9WgXcQ`
-                `https://www.youtube.com/playlist?list=PLi9drqWffJ9FWBo7ZVOiaVy0UQQEm4IbP`"""
+                    spotifyExamples = """`https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC`
+                    `https://open.spotify.com/album/6N9PS4QXF1D0OWPk0Sxtb4`
+                    `https://open.spotify.com/artist/0gxyHStUsqpMadRV0Di1Qt`
+                    `https://open.spotify.com/playlist/6piHLVTmzq8nTix2wIlM8x`
+                    *Note: don't worry about the `?si=` bit at the end of your URL; it doesn't matter.*"""
+                    youtubeExamples = """`https://www.youtube.com/watch?v=dQw4w9WgXcQ`
+                    `https://www.youtube.com/playlist?list=PLi9drqWffJ9FWBo7ZVOiaVy0UQQEm4IbP`"""
 
-                unsupportedVar.add_field(name="Spotify",value=spotifyExamples,inline=False)
-                unsupportedVar.add_field(name="YouTube",value=youtubeExamples,inline=False)
+                    unsupportedVar.add_field(name="Spotify",value=spotifyExamples,inline=False)
+                    unsupportedVar.add_field(name="YouTube",value=youtubeExamples,inline=False)
 
-                await message.channel.send(embed=unsupportedVar,delete_after=20)
+                    await message.channel.send(embed=unsupportedVar,delete_after=20)
             
-            else:
-                source = "none"
-                
+                else:
+                    source = "none"
 
-            if source == "spotify":
+                if source == "spotify":
 
-                if "https://open.spotify.com/playlist/" in message.content:
-                    playlist_id = message.content.replace("https://open.spotify.com/playlist/","")
-                    accessToken = getAccessToken(client_id, client_secret)
-                    playlist = getSpotifyInfo(accessToken,"playlists",playlist_id)
-                    playlistEmbed = spotifyPlaylistEmbed(playlist,message)
-                    botMsg = await message.channel.send(embed=playlistEmbed)
+                    if "https://open.spotify.com/playlist/" in message.content:
+                        playlist_id = message.content.replace("https://open.spotify.com/playlist/","")
+                        accessToken = getAccessToken(client_id, client_secret)
+                        playlist = getSpotifyInfo(accessToken,"playlists",playlist_id)
+                        playlistEmbed = spotifyPlaylistEmbed(playlist,message)
+                        botMsg = await message.channel.send(embed=playlistEmbed)
 
-                elif "https://open.spotify.com/track/" in message.content:
-                    track_id = message.content.replace("https://open.spotify.com/track/","")
-                    track_id = track_id.split("?")[0]
-                    accessToken = getAccessToken(client_id, client_secret)
-                    track = getSpotifyInfo(accessToken,"tracks",track_id)
-                    trackEmbed = spotifyTrackEmbed(track,message)
-                    botMsg = await message.channel.send(embed=trackEmbed)
+                    elif "https://open.spotify.com/track/" in message.content:
+                        track_id = message.content.replace("https://open.spotify.com/track/","")
+                        track_id = track_id.split("?")[0]
+                        accessToken = getAccessToken(client_id, client_secret)
+                        track = getSpotifyInfo(accessToken,"tracks",track_id)
+                        trackEmbed = spotifyTrackEmbed(track,message)
+                        botMsg = await message.channel.send(embed=trackEmbed)
 
-                elif "https://open.spotify.com/artist/" in message.content:
-                    artist_id = message.content.replace("https://open.spotify.com/artist/","")
-                    artist_id = artist_id.split("?")[0]
-                    accessToken = getAccessToken(client_id, client_secret)
-                    artist = getSpotifyInfo(accessToken,"artists",artist_id)
-                    artistEmbed = spotifyArtistEmbed(artist,message)
-                    botMsg = await message.channel.send(embed=artistEmbed)
+                    elif "https://open.spotify.com/artist/" in message.content:
+                        artist_id = message.content.replace("https://open.spotify.com/artist/","")
+                        artist_id = artist_id.split("?")[0]
+                        accessToken = getAccessToken(client_id, client_secret)
+                        artist = getSpotifyInfo(accessToken,"artists",artist_id)
+                        artistEmbed = spotifyArtistEmbed(artist,message)
+                        botMsg = await message.channel.send(embed=artistEmbed)
 
-                elif "https://open.spotify.com/album/" in message.content:
-                    album_id = message.content.replace("https://open.spotify.com/album/","")
-                    album_id = album_id.split("?")[0]
-                    accessToken = getAccessToken(client_id, client_secret)
-                    album = getSpotifyInfo(accessToken,"albums",album_id)
-                    albumEmbed = spotifyAlbumEmbed(album,message)
-                    botMsg = await message.channel.send(embed=albumEmbed)
+                    elif "https://open.spotify.com/album/" in message.content:
+                        album_id = message.content.replace("https://open.spotify.com/album/","")
+                        album_id = album_id.split("?")[0]
+                        accessToken = getAccessToken(client_id, client_secret)
+                        album = getSpotifyInfo(accessToken,"albums",album_id)
+                        albumEmbed = spotifyAlbumEmbed(album,message)
+                        botMsg = await message.channel.send(embed=albumEmbed)
 
-            elif source == "youtube":
+                elif source == "youtube":
 
-                await message.channel.send(embed=setembedvar("R","YouTube support on the way.",f"{nope} YouTube URLs are not currently supported, though I'm working on it!",False),delete_after=5)
+                    await message.channel.send(embed=setembedvar("R","YouTube support on the way.",f"{nope} YouTube URLs are not currently supported, though I'm working on it!",False),delete_after=5)
 
-                if "https://www.youtube.com/playlist?list=" in message.content:
-                    playlist_id = message.content.replace("https://www.youtube.com/playlist?list=","")
-                    ## Need to finish
+                    if "https://www.youtube.com/playlist?list=" in message.content:
+                        playlist_id = message.content.replace("https://www.youtube.com/playlist?list=","")
+                        ## Need to finish
 
-                elif "https://www.youtube.com/watch?v=" in message.content:
-                    video_id = message.content.replace("https://www.youtube.com/watch?v=","")
-                    video_id = (video_id.split("&"))[0]
-                    videoEmbed = youtubeVideoEmbed(video_id,message)
-                    botMsg = await message.channel.send(embed=videoEmbed)
-                    ## Need to finish
+                    elif "https://www.youtube.com/watch?v=" in message.content:
+                        video_id = message.content.replace("https://www.youtube.com/watch?v=","")
+                        video_id = (video_id.split("&"))[0]
+                        videoEmbed = youtubeVideoEmbed(video_id,message)
+                        botMsg = await message.channel.send(embed=videoEmbed)
+                        ## Need to finish
 
-            if source != "none":
-                await message.delete()
-                if source != "unsupported":
-                    await botMsg.add_reaction(upvote)
-                    await botMsg.add_reaction(downvote)
+                if source != "none":
+                    await message.delete()
+                    if source != "unsupported":
+                        await botMsg.add_reaction(upvote)
+                        await botMsg.add_reaction(downvote)
 
 def setup(bot):
     bot.add_cog(Music(bot))

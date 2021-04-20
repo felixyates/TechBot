@@ -3,21 +3,63 @@ from discord.ext import commands
 from async_timeout import timeout
 from modules.embedvars import setembedvar
 from modules.emoji import yep,nope,blob_ban
+from modules.serverJSON import loadServerJson
 import sqlite3
 
 cases = [] # [case number,user id]
 warnings = [] # [user id,number of warnings]
 
-with open("cogs/servers.txt","r") as serversfile: # guildid,modchannelid
-    servers = serversfile.readlines()
-    for i in range(len(servers)):
-        servers[i] = servers[i].strip("\n").split(",")
-        print(f"Server: {servers[i][0]}, Mod Channel: {servers[i][1]}")
-
 with open("cogs/blocklist.txt","r") as slurfile:
     blockedwords = slurfile.readlines()
     for i in range(len(blockedwords)):
         blockedwords[i] = blockedwords[i].strip("\n").split(",")
+
+def reactionCheck(r):
+    print("")
+
+async def caseSetup(self, message, channel, i):
+
+    global case, criminal, foundInChannel, modMessage, modChannel
+
+    detectedMsg = f"""Slur `{blockedwords[i][1]}` was detected in your message.
+    It has been forwarded to the server moderation team.
+    Action will be taken depending on whether it is a false positive or not.
+    <@{message.author.id}>"""
+
+    case = [] # case number, user id
+    criminal = message.author
+
+    case.append(len(cases) + 1)
+    case.append(message.author.id)
+    cases.append(case)
+
+    await message.delete()
+
+    detectedVar = setembedvar("R","Slur Detected",detectedMsg)
+    detectedVar.set_footer(text="Note: this may be a false positive. Do not panic, it will be reviewed.")
+
+    foundIn = message.channel.id
+    foundInChannel = self.bot.get_channel(foundIn)
+    await foundInChannel.send(embed=detectedVar)
+
+    modMsg = f"""Slur `{blockedwords[i][1]}` was detected in a message by <@{case[1]}> in channel <#{foundIn}>.
+    It read:
+
+    `{message.content}`
+
+    React with:
+    - {yep} if you believe this was correct and a warning should be given,
+    - {blob_ban} if you believe the message author should be banned, or
+    - {nope} if you think it was a false positive."""
+
+    modVar = setembedvar("R","Slur Detected",modMsg)
+    modVar.set_footer(text=f"Case #{case[0]}")
+    modChannel = self.bot.get_channel(channel)
+
+    modMessage = await modChannel.send(embed=modVar)
+    await modMessage.add_reaction(yep)
+    await modMessage.add_reaction(blob_ban)
+    await modMessage.add_reaction(nope)
 
 class SlurDetector(commands.Cog, name="slurdetector"):
     def __init__(self,bot):
@@ -25,57 +67,32 @@ class SlurDetector(commands.Cog, name="slurdetector"):
 
     @commands.Cog.listener()
     async def on_message(self,message):
-        global incidentguild, detectedSlur, case, criminal, foundInChannel, modMessage, modChannel
+
+        global incidentguild, detectedSlur
         incidentguild = message.guild
         guildid = incidentguild.id
-        for s in range(len(servers)):
-            if int(servers[s][0]) == guildid:
-                channel = int(servers[s][1])
-                for i in range(len(blockedwords)):
-                    if blockedwords[i][0] in message.content:
-                        detectedMsg = f"""Slur `{blockedwords[i][1]}` was detected in your message.
-                        It has been forwarded to the server moderation team.
-                        Action will be taken depending on whether it is a false positive or not.
-                        <@{message.author.id}>
-                        """
-                        detectedSlur = blockedwords[i][1]
-                        case = [] # case number, user id
-                        criminal = message.author
-                        case.append(len(cases) + 1)
-                        case.append(message.author.id)
-                        cases.append(case)
-                        print("\n--- NEW CASE ---\n" + str(case) + "\n" + str(cases) + "\n------\n")
-                        await message.delete()
-                        detectedVar = setembedvar("R","Slur Detected",detectedMsg,False)
-                        detectedVar.set_footer(text="Note: this may be a false positive. Do not panic, it will be reviewed.")
-                        foundIn = message.channel.id
-                        foundInChannel = self.bot.get_channel(foundIn)
-                        await foundInChannel.send(embed=detectedVar)
+        
+        servers = loadServerJson()
+        server = servers[str(guildid)]
+        enabled = server["slurdetector"]["enabled"]
 
-                        modMsg = f"""Slur `{blockedwords[i][1]}` was detected in a message by <@{case[1]}> in channel <#{foundIn}>.
-                        It read:
+        if enabled == 1:
 
-                        `{message.content}`
+            for i in range(len(blockedwords)):
+                if blockedwords[i][0] in message.content:
+                    detectedSlur = blockedwords[i][1]
+                    await caseSetup(self, message, int(server["slurdetector"]["channel"]), i)
 
-                        React with:
-                        - {yep} if you believe this was correct and a warning should be given,
-                        - {blob_ban} if you believe the message author should be banned, or
-                        - {nope} if you think it was a false positive."""
+                    """reaction = await self.bot.wait_for('reaction', check = reactionCheck)"""
+        
+        else:
 
-                        modVar = setembedvar("R","Slur Detected",modMsg,False)
-                        modVar.set_footer(text=f"Case #{case[0]}")
-                        modChannel = self.bot.get_channel(channel)
-                        modMessage = await modChannel.send(embed=modVar)
-                        await modMessage.add_reaction(yep)
-                        await modMessage.add_reaction(blob_ban)
-                        await modMessage.add_reaction(nope)
+            return
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        emoji = ['blob_ban','yep','nope']
-        for i in range(len(emoji)):
-            if payload.emoji == emoji[i]:
-                if (payload.message_id == modMessage.id) and (payload.member.bot != True):
+
+            if (payload.message_id == modMessage.id) and (payload.member.bot != True):
 
                     ## Correct and Warnworthy Case
 
