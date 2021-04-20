@@ -1,6 +1,6 @@
 # TechBot
 
-Just a simple Discord bot that I'm trying to build :) I only intend for it to be used for 3 servers - two are mine (the first for solo testing, the second for chilling) and the third is my friend's (also for chilling).
+Just a simple Discord bot that I'm trying to build :) I only intend for it to be used for a few servers of mine and my friends.
 
 ## Features
 - [x] Text responder. The bot responds to certain messages with an image.
