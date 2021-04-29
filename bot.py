@@ -30,7 +30,17 @@ async def on_command_error(ctx, error):
     elif isinstance(error, MissingRequiredArgument):
         await ctx.send(embed=setembedvar("R","Command Missing Argument(s)",f"`{str(error)}`"))
         return
-    raise error
+    else:
+        statusChannel = 837336145272111114 # techbot, error log
+        channel = bot.get_channel(statusChannel)
+        embed = setembedvar("R","An Error Occurred")
+        embed.add_field(name="Guild Name", value=f"`{ctx.guild.name}`")
+        embed.add_field(name="Guild ID", value=f"`{ctx.guild.id}`")
+        embed.add_field(name="Channel ID", value=f"`{ctx.channel.id}`")
+        embed.add_field(name="Command Issuer", value=f"`{ctx.author.name} // {ctx.author.id}`")
+        embed.add_field(name="Message", value=f"`{ctx.message.content}`")
+        embed.add_field(name="Error Contents", value=f"`{str(error)}`", inline=False)
+        await channel.send(embed=embed)
 
 @bot.command()
 @commands.is_owner()
