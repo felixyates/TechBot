@@ -169,12 +169,12 @@ class Owner(commands.Cog, name="owner"):
         async for guild in self.bot.fetch_guilds():
             guild = self.bot.get_guild(guild.id)
             server = servers[str(guild.id)]
-            serverMsg = f"""ID: `{guild.id}`
-            Prefix: `{server["prefix"]}`
-            Welcome: `{server["welcome"]["enabled"]}`, `{server["welcome"]["channel"]}`, `{server["welcome"]["message"]}`
-            Slur Detector : `{server["slurdetector"]["enabled"]}`, `{server["slurdetector"]["channel"]}`
-            Music: `{server["music"]["enabled"]}`, `{server["music"]["channel"]}`"""
-            serverEmbed = setembedvar("G", guild.name, description=serverMsg, thumbnail = guild.icon_url)
+            serverEmbed = setembedvar("G", guild.name, thumbnail = guild.icon_url)
+            serverEmbed.add_field(name="Prefix", value= f"`{server['prefix']}`")
+            serverEmbed.add_field(name="Guild ID", value= f"`{guild.id}`")
+            serverEmbed.add_field(name="Slur Detector", value= f'`{server["slurdetector"]["enabled"]}`, `{server["slurdetector"]["channel"]}`')
+            serverEmbed.add_field(name="Music", value= f'`{server["music"]["enabled"]}`, `{server["music"]["channel"]}`')
+            serverEmbed.add_field(name="Welcome", value= f'`{server["welcome"]["enabled"]}`, `{server["welcome"]["channel"]}`'+"\n"+f'`{server["welcome"]["message"]}`')
             await ctx.send(embed = serverEmbed)
     
     @commands.command()

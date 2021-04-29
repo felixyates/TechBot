@@ -124,7 +124,7 @@ class Administration(commands.Cog, name="administration"):
         
         else:
 
-            await ctx.send(embed = setembedvar("R","Music Channel Unset",f"{nope} Set up the music module first ({server['prefix']}musicsetup <music-channel-id>)"))
+            await ctx.send(embed = setembedvar("R","Music Channel Unset",f"{nope} Set up the music module first ({server['prefix']}musicsetup <channel-id>)"))
     
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -138,10 +138,12 @@ class Administration(commands.Cog, name="administration"):
         author = ctx.author
         success1 = success2 = False
 
-        timedOutVar = setembedvar("R","Setup Expired",f"{nope} Didn't receive response. Run `>welcomesetup` to restart setup.",False)
+        prefix= loadServerJson()[str(ctx.guild.id)]["prefix"]
 
-        cancelledMsg = """Cancelled welcome message setup.
-                        You can always run >welcomesetup to start again."""
+        timedOutVar = setembedvar("R","Setup Expired",f"{nope} Didn't receive response. Run `{prefix}welcomesetup` to restart setup.",False)
+
+        cancelledMsg = f"""Cancelled welcome message setup.
+                        You can always run {prefix}welcomesetup to start again."""
         cancelledVar = setembedvar("R","Cancelled Setup",cancelledMsg,False)
 
         embedOneMsg = """What's the ID of the channel you'd like the welcome message to be sent to?
@@ -239,7 +241,8 @@ class Administration(commands.Cog, name="administration"):
             shouldContinue, success2, welcomeMessage = await welcomeMessage()
         member = author.mention
         servername = ctx.guild.name
-        await ctx.send(embed=setembedvar("G","Setup Complete",f"{yep} All done! Below you can see a preview of your welcome message."+"\nIf you want to change anything, simply re-run the command (>welcomesetup).",False))
+        prefix= loadServerJson()[str(ctx.guild.id)]["prefix"]
+        await ctx.send(embed=setembedvar("G","Setup Complete",f"{yep} All done! Below you can see a preview of your welcome message."+"\n"+f"If you want to change anything, simply re-run the command ({prefix}welcomesetup).",False))
         tempwelcomeMessage = welcomeMessage.replace("{member}",member).replace("{servername}",servername)
         await ctx.send(str(tempwelcomeMessage))
 
@@ -344,7 +347,7 @@ class Administration(commands.Cog, name="administration"):
         
         else:
 
-            await ctx.send(embed = setembedvar("R","Slur Detector Moderation Channel Unset",f"{nope} Set up the slur detector module first"+"\n"+f"({server['prefix']}slurdetectorsetup <moderation-channel-id>)"))
+            await ctx.send(embed = setembedvar("R","Slur Detector Moderation Channel Unset",f"{nope} Set up the slur detector module first"+"\n"+f"({server['prefix']}slurdetectorsetup <channel-id>)"))
     
     @commands.command()
     @commands.has_permissions(administrator = True)
@@ -376,7 +379,7 @@ class Administration(commands.Cog, name="administration"):
         
         else:
 
-            await ctx.send(embed = setembedvar("R","Welcome Channel Unset",f"{nope} Set up the welcome detector module first"+"\n"+f"({server['prefix']}welcome <welcome-channel-id>)"))
+            await ctx.send(embed = setembedvar("R","Welcome Channel Unset",f"{nope} Set up the welcome module first"+"\n"+f"({server['prefix']}welcomesetup)"))
 
 def setup(bot):
     bot.add_cog(Administration(bot))

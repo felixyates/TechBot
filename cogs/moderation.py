@@ -1,6 +1,4 @@
-import discord
-import os
-import asyncio
+import discord, os, asyncio, datetime
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
@@ -32,20 +30,30 @@ class Moderation(commands.Cog, name="moderation"):
  
     @commands.command(pass_context=True)
     @has_permissions(manage_messages=True)
-    async def purge(self,ctx):
-        "Deletes a specied number of messages (max 100).Only works for messages under 14 days old, and you must have the 'Manage Messages' permission. Currently broken, too."
-        channel = ctx.channel
-        msg = str(ctx.message.content)
-        msgList = msg.split(" ")
-        deleteNo = int(msgList[1])
-        if (deleteNo >= 0) and (deleteNo <=100):
-            async with channel.typing():
-                messages = await channel.history(limit=deleteNo+1).flatten()
+    async def delete(self, ctx, deleteNumber: int):
+        "Deletes a specied number of messages (max 100). Only works for messages under 14 days old, and you must have the 'Manage Messages' permission."
+        if (deleteNumber >= 0) and (deleteNumber <=100):
+            async with ctx.channel.typing():
+                daysago = datetime.datetime.now() - datetime.timedelta(days=14)
+                try:
+                    messages = await ctx.channel.history(limit=deleteNumber, after=daysago).flatten()
+                except Exception as e:
+                    await ctx.send(e)
                 await ctx.channel.delete_messages(messages)
-                embedVar = setembedvar("G","Deleted messages",f"{yep} Deleted {deleteNo} messages.",False)
+                embedVar = setembedvar("G","Deleted messages",f"{yep} Deleted {len(messages)} messages.",False)
                 await ctx.message.channel.send(embed=embedVar,delete_after=5)
         else:
-            embedVar = setembedvar("R","Didn't delete messages",f"{nope} The number of deleted messages must be between 0 and 100, not {deleteNo}!",False)
+            embedVar = setembedvar("R","Didn't delete messages",f"{nope} The number of deleted messages must be between 0 and 100, not {deleteNumber}!",False)
+            await ctx.message.channel.send(embed=embedVar,delete_after=5)
+
+    @commands.command(pass_context=True)
+    @has_permissions(manage_messages=True)
+    async def purge(self, ctx):
+        "Deletes 100 messages under 14 days old."
+        async with ctx.channel.typing():
+            messages = await ctx.channel.history(limit=100).flatten()
+            await ctx.channel.delete_messages(messages)
+            embedVar = setembedvar("G","Deleted messages",f"{yep} Deleted {len(messages)} messages.",False)
             await ctx.message.channel.send(embed=embedVar,delete_after=5)
 
 def setup(bot):
