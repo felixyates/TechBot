@@ -3,7 +3,7 @@ from discord.ext import commands
 from async_timeout import timeout
 from modules.embedvars import setembedvar
 from modules.emoji import yep,nope,blob_ban
-from modules.serverJSON import loadServerJson, updateServerJson
+from modules.getjson import loadServerJson, updateServerJson
 
 cases = [] # [case number,user id]
 warnings = [] # [user id,number of warnings]

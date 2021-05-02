@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar
-from modules.serverJSON import loadServerJson, updateServerJson
+from modules.getjson import loadServerJson, updateServerJson
 
 class Welcome(commands.Cog, name="welcome"):
 
