@@ -7,17 +7,16 @@ from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from async_timeout import timeout
 from modules.emoji import yep,nope,tada_animated
 from modules.embedvars import setembedvar
+from modules.getjson import secret
 
-with open('/home/felixyates1/token.txt','r') as file:
-    file = file.readlines()
-    TOKEN = str(file[0])
+TOKEN = secret("discord")
 
 def get_prefix(bot, message):
     with open("servers.json", "r") as f:
         servers = json.load(f)
     return servers[str(message.guild.id)]["prefix"]
 
-description = 'TechBot in Python'
+description = 'TechBot'
 intents = discord.Intents().all()
 intents.members = True
 intents.guilds = True
@@ -31,8 +30,8 @@ async def on_command_error(ctx, error):
         await ctx.send(embed=setembedvar("R","Command Missing Argument(s)",f"`{str(error)}`"))
         return
     else:
-        statusChannel = 837336145272111114 # techbot, error log
-        channel = bot.get_channel(statusChannel)
+        errorChannel = 837336145272111114 # techbot, error log
+        channel = bot.get_channel(errorChannel)
         embed = setembedvar("R","An Error Occurred")
         embed.add_field(name="Guild Name", value=f"`{ctx.guild.name}`")
         embed.add_field(name="Guild ID", value=f"`{ctx.guild.id}`")

@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from modules.embedvars import setembedvar
 from modules.emoji import yep, nope, tada_animated
-from modules.serverJSON import *
+from modules.getjson import loadServerJson, updateServerJson
 
 class ChannelDoesNotExist(Exception):
     pass

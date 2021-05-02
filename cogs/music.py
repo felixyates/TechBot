@@ -4,7 +4,7 @@ from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar
 from modules.emoji import upvote,downvote,nope
-from modules.serverJSON import loadServerJson
+from modules.getjson import secret, loadServerJson
 
 ## Send a YouTube / Spotify URL and TechBot will react with upvote and downvote
 ## Future versions will delete the original message and send an embed with:
@@ -18,16 +18,11 @@ global spotifyColour, youtubeColour
 spotifyColour = 0x1db954
 youtubeColour = 0xe62117
 
+spotify = secret("spotify")
+client_secret = spotify["private"]
+client_id = spotify["public"]
 
-with open('/home/felixyates1/spotify_secret.txt','r') as file:
-    client_secret = str(file.readlines()[0])
-
-with open('/home/felixyates1/spotify_client_id.txt','r') as file:
-    client_id = str(file.readlines()[0])
-
-with open('/home/felixyates1/youtube_api_key.txt','r') as file:
-    yt_api_key = str(file.readlines()[0])
-
+yt_api_key = secret("youtube")
 
 def durationFormatter(duration_ms):
     # Calculating track/video length and formatting it appropriately.

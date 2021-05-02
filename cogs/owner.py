@@ -5,7 +5,7 @@ from asyncio import sleep
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar
-from modules.emoji import tada_animated, dnd, online, yep, nope, loading
+from modules.emoji import tada_animated, dnd, online, offline, yep, nope, loading, wave_animated
 from modules.serverJSON import loadServerJson
 
 global maintenanceStatus, onlineVar, statusChannel
@@ -208,6 +208,13 @@ class Owner(commands.Cog, name="owner"):
 
         await setstatus(self, ctx, status, "watching")
 
+    @commands.command()
+    @commands.is_owner()
+    async def logout(self, ctx):
+        await ctx.send(embed = setembedvar("G", "Logging out", f"{wave_animated} See you soon!"))
+        channel = self.bot.get_channel(statusChannel)
+        await channel.send(embed = setembedvar(0x747F8E, f"{offline} Offline", f"The bot is going offline. Check here for updates."))
+        await self.bot.logout()
             
 
 def setup(bot):
