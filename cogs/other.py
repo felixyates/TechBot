@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar,requestedbyfooter
-from modules.serverJSON import loadServerJson
+from modules.getjson import loadServerJson
 
 def converttostr(input_seq, separator):
    # Join all the strings in list

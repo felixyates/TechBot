@@ -45,13 +45,11 @@ def durationFormatter(duration_ms):
 
 def getYouTubeData(id,type):
     if type == "video":
-        endpoint = f"https://www.googleapis.com/youtube/v3/videos?part=statistics&id={id}&key={yt_api_key}"
+        endpoint = f"https://www.googleapis.com/youtube/v3/videos?part=snippet%2Cstatistics%2CcontentDetails&id={id}&key={yt_api_key}"
     elif type == "channel":
         endpoint = f"https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics&id={id}&key={yt_api_key}"
     res = requests.get(endpoint)
-    print(res)
     responseObject = res.json()
-    print(responseObject)
     return responseObject
 
 def youtubeVideoEmbed(video_id,message):
@@ -61,24 +59,41 @@ def youtubeVideoEmbed(video_id,message):
     snippet = video["items"][0]["snippet"]
     title = snippet["title"]
     video_url = f"https://www.youtube.com/watch?v={video_id}"
-    thumbnail = snippet["thumbnails"]["url"]
+    thumbnail = snippet["thumbnails"]["default"]["url"]
     duration = video["items"][0]["contentDetails"]["duration"]
-    channelID = video["channel"]
+
+    if duration.startswith("PT") == True:
+        duration = duration.strip("PT")
+        duration = duration.replace("H","h ")
+        duration = duration.replace("M","m ")
+        duration = duration.replace("S", "s")
+    else:
+        print(duration)
+        duration = duration.strip("P")
+        duration = duration.replace("DT","")
+        days = duration[0]
+        duration = duration[1:]
+        duration = duration.replace("H","h ")
+        duration = duration.replace("M","m ")
+        duration = duration.replace("S","s")
+        duration = f"{days}d {duration}"
+
+    channelID = snippet["channelId"]
+    channelTitle = snippet["channelTitle"]
 
     channel = getYouTubeData(channelID,"channel")
 
-    channelName = channel["title"]
-    channelIcon = channel["thumbnails"]["url"]
+    channelIcon = channel["items"][0]["snippet"]["thumbnails"]["default"]["url"]
     channelURL = f"https://www.youtube.com/channel/{channelID}"
 
-    stats = video["statistics"]
+    stats = video["items"][0]["statistics"]
 
     views = stats["viewCount"]
     likes = stats["likeCount"]
     dislikes = stats["dislikeCount"]
 
     embed=discord.Embed(title=title, url=video_url, color=youtubeColour)
-    embed.set_author(name=channelName, url=channelURL, icon_url=channelIcon)
+    embed.set_author(name=channelTitle, url=channelURL, icon_url=channelIcon)
     embed.set_thumbnail(url=thumbnail)
     embed.add_field(name="Views", value=views, inline=True)
     embed.add_field(name="Likes", value=likes, inline=True)
