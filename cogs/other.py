@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar,requestedbyfooter
-from modules.getjson import loadServerJson
+from modules.getjson import loadServerJson, get_prefix
 
 def converttostr(input_seq, separator):
    # Join all the strings in list
@@ -18,6 +18,12 @@ def get_prefix(bot, message):
 class Other(commands.Cog, name="other"):
     def __init__(self, bot):
         self.bot = bot
+    
+    @commands.Cog.listener()
+    async def on_message(self,message):
+        if self.bot.user.mentioned_in(message):
+            prefix = get_prefix(self, message)
+            await message.channel.send(f"Hey, {message.author.mention}! My prefix for this server is `{prefix}`. Run `{prefix}help` for, you guessed it, help :)")
 
     @commands.command()
     async def hello(self,ctx):
@@ -25,9 +31,13 @@ class Other(commands.Cog, name="other"):
         await ctx.send("world")
 
     @commands.command()
-    async def add(self,ctx, left : int, right : int):
+    async def add(self,ctx, a : float, b : float):
         "Adds two numbers together."
-        await ctx.send(left + right)
+        total = a + b
+        if int(total) == total:
+            await ctx.send(str(int(total)))
+        else:
+            await ctx.send(a + b)
 
     @commands.command()
     async def servers(self,ctx):

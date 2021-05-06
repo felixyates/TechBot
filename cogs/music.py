@@ -511,8 +511,6 @@ class Music(commands.Cog, name="music"):
 
                 elif source == "youtube":
 
-                    await message.channel.send(embed=setembedvar("R","YouTube support on the way.",f"{nope} YouTube URLs are not currently supported, though I'm working on it!",False),delete_after=5)
-
                     if "https://www.youtube.com/playlist?list=" in message.content:
                         playlist_id = message.content.replace("https://www.youtube.com/playlist?list=","")
                         ## Need to finish

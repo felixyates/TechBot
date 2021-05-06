@@ -1,4 +1,5 @@
-import json
+import json, discord
+from discord.ext import commands
 
 def loadServerJson():
 
@@ -17,3 +18,10 @@ def secret(fetch):
     with open("secrets.json", "r") as f:
         secrets = json.load(f)
         return secrets[fetch]
+
+def get_prefix(bot, message):
+
+    with open("servers.json", "r") as f:
+        servers = json.load(f)
+
+    return commands.when_mentioned_or(servers[str(message.guild.id)]["prefix"])(bot, message)
