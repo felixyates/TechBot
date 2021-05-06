@@ -7,14 +7,9 @@ from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from async_timeout import timeout
 from modules.emoji import yep,nope,tada_animated
 from modules.embedvars import setembedvar
-from modules.getjson import secret
+from modules.getjson import secret, get_prefix
 
 TOKEN = secret("discord")
-
-def get_prefix(bot, message):
-    with open("servers.json", "r") as f:
-        servers = json.load(f)
-    return servers[str(message.guild.id)]["prefix"]
 
 description = 'TechBot'
 intents = discord.Intents().all()
