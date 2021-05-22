@@ -1,19 +1,39 @@
-import discord, os, asyncio, sqlite3, json
+import discord, json
 from discord.ext import commands
-from discord.ext.commands import has_permissions
 
-class GuildSetup(commands.Cog, name="guildsetup"):
+botServersChannel = 845051653451546684 # techbot, bot servers log channel
+
+async def servermessage(self, guild, type):
+
+    serversChannel = self.bot.get_channel(botServersChannel)
+
+    if type == "join":
+
+        beginning = "+ Joined"
+
+    elif type == "leave":
+
+        beginning = "- Left"
+
+    message = f"{beginning} server `{guild.name}` with `{guild.member_count}` members, owned by `{guild.owner.name}` (user ID `{guild.owner.id}`)."
+    await serversChannel.send(message)
+
+class Events(commands.Cog, name="events"):
 
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
+        
+        await servermessage(self, guild, "join")
 
         # adapted from these comments:
+
             # https://stackoverflow.com/a/64513681/14577385
             # https://stackoverflow.com/a/52281859/14577385
-        # thank you :)
+
+        # thank you ^_^
 
         with open('servers.json', 'r') as f:
             servers = json.load(f)
@@ -54,9 +74,11 @@ class GuildSetup(commands.Cog, name="guildsetup"):
 
         with open('servers.json', 'w') as f:
             json.dump(servers, f, indent=4)
-
+    
     @commands.Cog.listener()
-    async def on_guild_remove(self, guild): # when the bot is removed from a guild
+    async def on_guild_remove(self, guild):
+
+        await servermessage(self, guild, "leave")
 
         with open('servers.json', 'r') as f:
             servers = json.load(f)
@@ -69,4 +91,4 @@ class GuildSetup(commands.Cog, name="guildsetup"):
             json.dump(servers, f, indent=4)
 
 def setup(bot):
-    bot.add_cog(GuildSetup(bot))
+    bot.add_cog(Events(bot))

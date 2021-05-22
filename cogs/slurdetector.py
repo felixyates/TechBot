@@ -119,12 +119,19 @@ class SlurDetector(commands.Cog, name="slurdetector"):
 
         match = False
 
-        cases = loadCases()
-        for item in cases.values():
-            if item["modMessage"] == payload.message_id:
-                match = True
+        if payload.member.bot != True:
+            cases = loadCases()
+            tempCases = cases
+            caseTotal = tempCases["caseTotal"]
+            tempCases.pop("caseTotal")
+            for item in range(1,caseTotal+1):
+                print(tempCases[str(item)]["modMessage"])
+                if tempCases[str(item)]["modMessage"] == payload.message_id:
+                    match = True
 
-        if (match == True) and (payload.member.bot != True):
+        if match == True:
+
+            print("Mod message matched")
 
             for key, value in cases.items():
                 if payload.message_id == value["modMessage"]:
@@ -157,7 +164,9 @@ class SlurDetector(commands.Cog, name="slurdetector"):
 
                 for warning in warnings:
 
-                    if warning["user_id"] == case["criminal"].id: # if user id found in warnings file
+                    print(warning,case)
+
+                    if int(warning) == case["criminal"]: # if user id found in warnings file
 
                         found = True
                         banned = False
@@ -174,7 +183,17 @@ class SlurDetector(commands.Cog, name="slurdetector"):
 
                             await foundInChannel.send(embed=setembedvar("R",f"{blob_ban} Member banned",banMsg,False))
                             await criminal.send(f"You were banned from the `{incidentguild.name}` server for exceeding your warnings regarding use of slurs. Do better.")
+                            
+                            cases.pop(caseID)
+                            cases["caseTotal"] = caseTotal-1
+                            updateCases(cases)
+
+                        try:
                             await foundInChannel.guild.ban(criminal)
+                        except:
+                            banFailEmbed = setembedvar("R",f"Couldn't ban {criminal.name}",f"{nope} User {criminal.mention} couldn't be banned. Make sure the bot has sufficient permissions to do so, or do it manually.")
+                            banFailEmbed.set_footer(text=f"Case #{caseID} · Handled by {payload.member.name} // {payload.member.id}")
+                            await modChannel.send(embed=banFailEmbed)
 
                         else:
 
@@ -194,7 +213,8 @@ class SlurDetector(commands.Cog, name="slurdetector"):
                             Do better. You know slurs aren't allowed here. So, so, not cool."""
 
                             reactedVar = setembedvar("G",f"Case #{caseID} Closed",f"{payload.member.mention} reacted with {yep} and so {criminal.mention} was given a warning.",False)
-                            await foundInChannel.send(embed=setembedvar("R","Case Reviewed",warnMsg,False))
+                            warnEmbed = setembedvar("R","Case Reviewed",warnMsg,False).set_embed(text=f"Case #{caseID} · Handled by {payload.member.name} // {payload.member.id}")
+                            await foundInChannel.send(embed=warnEmbed)
                             await modChannel.send(embed=reactedVar)
 
                         else:
@@ -216,31 +236,47 @@ class SlurDetector(commands.Cog, name="slurdetector"):
                     Really, you shouldn't need any. You know slurs aren't allowed here.
                     Do better."""
 
-                    await foundInChannel.send(embed=setembedvar("R","Case reviewed",warnMsg,False))
+                    warnEmbed = setembedvar("R","Case reviewed",warnMsg)
+                    warnEmbed.set_footer(text=f"Case #{caseID} · Handled by {payload.member.name} // {payload.member.id}")
 
-                    print(cases)
+                    await foundInChannel.send(embed=warnEmbed)
+
+                    cases["caseTotal"] = caseTotal-1
                     cases.pop(caseID)
-                    print(cases)
                     updateCases(cases)
 
 
             ## Correct and Banworthy Case
 
             elif str(payload.emoji) == blob_ban:
+
                         print("Reacted with ban")
                         await modMessage.clear_reactions()
-                        reactedVar = setembedvar("G",f"Case #{caseID} Closed",f"{payload.member.mention} reacted with {blob_ban} and so {criminal.mention} was banned.",False)
-                        await modChannel.send(embed=reactedVar)
-                        banMsg = f"""{criminal.mention} was banned for their use of the `{detectedSlur}` slur.
-                        Remember, slurs are strictly forbidden, and you will be punished for using them.
-                        Thank you!"""
-                        banVar = setembedvar("R",f"{blob_ban} Member banned",banMsg,False)
-                        await foundInChannel.send(embed=banVar)
                         await criminal.send(f"You were banned from the `{incidentguild.name}` server for your use of the `{detectedSlur}` slur. Do better.")
-                        await foundInChannel.guild.ban(criminal)
-                        print(cases)
+
+                        try:
+                            
+                            await foundInChannel.guild.ban(criminal)
+
+                            reactedVar = setembedvar("G",f"Case #{caseID} Closed",f"{payload.member.mention} reacted with {blob_ban} and so {criminal.mention} was banned.")
+                            await modChannel.send(embed=reactedVar)
+
+                            banMsg = f"""{criminal.mention} was banned for their use of the `{detectedSlur}` slur.
+                            Remember, slurs are strictly forbidden, and you will be punished for using them.
+                            Thank you!"""
+
+                            banVar = setembedvar("R",f"{blob_ban} Member banned",banMsg)
+                            banVar.set_footer(text=f"Case #{caseID} · Handled by {payload.member.name} // {payload.member.id}")
+                            await foundInChannel.send(embed=banVar)
+
+                        except:
+
+                            banFailEmbed = setembedvar("R",f"Couldn't ban {criminal.name}",f"{nope} User {criminal.mention} couldn't be banned. Make sure the bot has sufficient permissions to do so, or do it manually.")
+                            banFailEmbed.set_footer(text=f"Case #{caseID} · Handled by {payload.member.name} // {payload.member.id}")
+                            await modChannel.send(embed=banFailEmbed)
+
+                        cases["caseTotal"] = caseTotal-1
                         cases.pop(caseID)
-                        print(cases)
                         updateCases(cases)
 
             ## False Positive Case
@@ -256,11 +292,11 @@ class SlurDetector(commands.Cog, name="slurdetector"):
                 The slur detected was determined to be a false positive by the moderation team.
                 Have a wonderful day :)"""
                 falsePositiveVar = setembedvar("G","False Positive!",falsePositiveMsg,False)
-                falsePositiveVar.set_footer(text=f"Case #{caseID}")
+                falsePositiveVar.set_footer(text=f"Case #{caseID} · Handled by {payload.member.name} // {payload.member.id}")
                 await foundInChannel.send(embed=falsePositiveVar)
-                print(cases)
+
+                cases["caseTotal"] = caseTotal-1
                 cases.pop(caseID)
-                print(cases)
                 updateCases(cases)
                     
 
