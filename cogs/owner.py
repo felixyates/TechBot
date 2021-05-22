@@ -215,6 +215,11 @@ class Owner(commands.Cog, name="owner"):
         channel = self.bot.get_channel(statusChannel)
         await channel.send(embed = setembedvar(0x747F8E, f"{offline} Offline", f"The bot is going offline. Check here for updates."))
         await self.bot.logout()
+    
+    @commands.command()
+    @commands.is_owner()
+    async def echo(self, ctx, message):
+        await ctx.send(ctx.message.content.split("echo ")[1])
             
 
 def setup(bot):

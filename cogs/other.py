@@ -1,7 +1,6 @@
-import sqlite3, random, discord, os, asyncio, json
+import random, discord, json
 from discord.ext import commands
 from discord.ext.commands import has_permissions
-from async_timeout import timeout
 from modules.embedvars import setembedvar,requestedbyfooter
 from modules.getjson import loadServerJson, get_prefix
 
@@ -21,7 +20,7 @@ class Other(commands.Cog, name="other"):
     
     @commands.Cog.listener()
     async def on_message(self,message):
-        if self.bot.user.mentioned_in(message):
+        if self.bot.user.mentioned_in(message) and message.author.bot == False and not ("@everyone" in message.content or "@here" in message.content):
             prefix = get_prefix(self, message)
             await message.channel.send(f"Hey, {message.author.mention}! My prefix for this server is `{prefix}`. Run `{prefix}help` for, you guessed it, help :)")
 
@@ -65,15 +64,13 @@ class Other(commands.Cog, name="other"):
         The prefix for this server (`{ctx.guild.name}`) is `{get_prefix(self,ctx)}`"""
 
         helpVar = setembedvar("G","Commands",helpVarMsg,url=techbotCmdsURL,author="TechLife", author_url=techlifeLinksURL, author_icon=techlifeIconURL)
-        randomNumber = random.randint(1,4)
+        randomNumber = random.randint(1,3)
         if randomNumber == 1:
             helpVar.add_field(name="Join the developer's server!", value="[Click here](https://www.techlifeyt.com/discord)", inline=False)
         elif randomNumber == 2:
             helpVar.add_field(name="Support TechBot", value="[Patreon](https://www.techlifeyt.com/patreon)", inline=False)
         elif randomNumber == 3:
             helpVar.add_field(name="Are you subscribed?", value="[YouTube](https://www.techlifeyt.com/youtube)", inline=False)
-        elif randomNumber == 4:
-            helpVar.add_field(name="Do you like Minecraft?", value="[Check out the TechSMP](https://www.techlifeyt.com/techsmp)", inline=False)
         helpVar = requestedbyfooter(helpVar,ctx.message)
         await ctx.message.channel.send(embed=helpVar)
     
