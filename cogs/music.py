@@ -401,8 +401,11 @@ def spotifyAlbumEmbed(album,message):
     
     # Getting artist's icon from artist object
 
-    mainArtist_icon = mainArtistObject["images"]
-    mainArtist_icon = mainArtist_icon[(len(mainArtist_icon)-1)]["url"]
+    try:
+        mainArtist_icon = mainArtistObject["images"]
+        mainArtist_icon = mainArtist_icon[(len(mainArtist_icon)-1)]["url"]
+    except:
+        mainArtist_icon = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
 
     # Using message.author for footer
 
@@ -472,9 +475,12 @@ def spotifyTrackEmbed(track,message):
         artistsName.append(tempArtist)
     
     # Getting artist's icon from artist object
-
-    mainArtist_icon = mainArtistObject["images"]
-    mainArtist_icon = mainArtist_icon[(len(mainArtist_icon)-1)]["url"]
+    
+    try:
+        mainArtist_icon = mainArtistObject["images"]
+        mainArtist_icon = mainArtist_icon[(len(mainArtist_icon)-1)]["url"]
+    except:
+        mainArtist_icon = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
 
     # Using message.author for footer
 

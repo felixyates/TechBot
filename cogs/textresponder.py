@@ -1,23 +1,32 @@
 import discord
-import os
-import asyncio
 from discord.ext import commands
-from discord.ext.commands import has_permissions
-from async_timeout import timeout
-import sqlite3
+from modules.getjson import loadServerJson, updateServerJson, thisServerJson 
+from modules.embedvars import setembedvar, requestedbyfooter
+from modules.emoji import yep, nope
 
 def listresponders(ctx):
-    guildid = int(ctx.guild.id)
-    db = sqlite3.connect('textresponder.db')
-    cursor = db.cursor()
-    responders = cursor.execute("SELECT * FROM RESPONDERS WHERE guildid = ?",(guildid,))
-    embedVar = discord.Embed(color=0x00ff00,title="Text Responders")
-    embedVar.add_field(name="Format",value=f"Type, Trigger, Response, Added By", inline=False)
-    for row in responders:
-        embedVar.add_field(name=f"{row[2]}",value=f"{row[1]}, {row[2]}, {row[3]}, {row[4]}", inline=False)
-    embedVar.set_footer(text=f"For guild {ctx.guild}.")
-    db.close()
-    return embedVar
+
+    server = thisServerJson(str(ctx.guild.id))
+    embed = setembedvar("G",f"Text Responders for {ctx.guild.name}")
+    embed = requestedbyfooter(embed, ctx.message)
+    embed.add_field(name = "Format", value = "Type, Trigger, Response, Added By (ID)", inline = False)
+    triggers = server["textresponder"]["triggers"]
+
+    for trigger in triggers:
+
+        responder = triggers[trigger]
+        embed.add_field(name = trigger, value=f'{responder["type"]}, {trigger}, {responder["response"]}, {responder["added_by"]}', inline=False)
+
+    return embed
+
+global updateServerCache
+
+async def updateServerCache():
+
+    global servers
+    servers = loadServerJson()
+
+servers = loadServerJson()
 
 class TextResponder(commands.Cog, name="textresponder"):
     def __init__(self,bot):
@@ -27,112 +36,140 @@ class TextResponder(commands.Cog, name="textresponder"):
 
     @commands.Cog.listener()
     async def on_message(self,message):
-
-        # Blocked words. Will call out user if they say one of the words.
-        # To add - slur detection from CSV / text file, send response in an embed
-            # Forward message to admins, etc.
-
-        if "nigg" in message.content:
-            await message.channel.send("DO NOT SAY THAT!!! "+message.author.mention)
         
         # Checks text responder database for guild triggers.
         # If guild trigger matches [Type 1] (/contains [Type 2]) message, bot will send response.
         # Type 1 - exact match, Type 2 - contains
 
-        db = sqlite3.connect('textresponder.db')
-        cursor = db.cursor()
-        guildid = message.guild.id
-        responders = cursor.execute("SELECT * FROM RESPONDERS WHERE guildid = ?",(guildid,))
-        if message.author.bot == False:
-            for row in responders:
-                if row[1] == 1:
-                    if message.content == row[2]:
-                        await message.channel.send(row[3])
-                elif row[1] == 2:
-                    if row[2] in message.content:
-                        await message.channel.send(row[3])
-        db.close()
+        server = servers[str(message.guild.id)]
+
+        if server["textresponder"]["enabled"] == 1:
+
+            textresponder = server["textresponder"]
+            triggers = textresponder["triggers"]
+
+            for trigger in triggers:
+
+                if triggers[trigger]["type"] == 1:
+
+                    if trigger == message.content:
+
+                        await message.channel.send(triggers[trigger]["response"])
+                
+                elif triggers[trigger]["type"] == 2:
+                
+                    if trigger in message.content:
+
+                        await message.channel.send(triggers[trigger]["response"])
+
     
     @commands.command()
     @commands.has_permissions(manage_emojis=True)
     async def addresponder(self,ctx,type:int,request:str):
         ## Adds the requested text responder for the server. Use '_' for spaces and '=' to separate trigger and response.
+
         guildid = ctx.guild.id
-        db = sqlite3.connect('textresponder.db')
-        print("Opened database successfully")
-        cursor = db.cursor()
+        
         valid = True
         request = request.split('=')
-        print(f"Responder type {type}.")
 
         if type != 1 and type != 2:
             valid = False
             await ctx.send("Valid responder types: 1 (exact match), 2 (contains)")
-        responders = cursor.execute("SELECT * FROM RESPONDERS WHERE guildid = ?",(guildid,))
+
+        await updateServerCache()
+        server = servers[str(guildid)]
+        triggers = server["textresponder"]["triggers"]
+
         trigger,response = request[0],request[1]
-        print(request,trigger,response)
         trigger = trigger.replace("_"," ")
         response = response.replace("_"," ")
-        print(f"Added spaces: {trigger}, {response}")
-        for row in responders:
-            if row[2] == trigger:
+
+        for responder in triggers:
+
+            if responder == trigger:
                 valid = False
-                await ctx.send(f"Responder already exists. Remove it using >removeresponder {trigger} to add it again.")
+                await ctx.send(f"Responder already exists. Remove it using `{server['prefix']}removeresponder {trigger}` to add it again.")
                 break
 
         if valid == True:
-            print(trigger,response)
-            requestedby = str(ctx.message.author)
-            print(requestedby)
-            print(guildid)
-            try:
-                cursor.execute("INSERT INTO RESPONDERS VALUES(?,?,?,?,?)",(guildid,type,trigger,response,requestedby))
-                db.commit()
-                print("Database changes committed successfully")
-            except:
-                db.close()
-                print("Failed to add to database.")
-            await ctx.send("Responder added.")
 
-        db.close()
-        print("Closed database successfully")
+            responder = {}
+            responder["type"] = type
+            responder["response"] = response
+            responder["added_by"] = ctx.message.author.id
+            triggers[trigger] = responder
+            servers[str(guildid)]["textresponder"]["triggers"] = triggers
+
+            updateServerJson(servers)
+            await updateServerCache()
+
+            await ctx.send("Added responder.")
     
     @commands.command()
     @commands.has_permissions(manage_emojis=True)
     async def removeresponder(self,ctx,responder: str):
         ## Removes all responders with the given trigger
+
         guildid = ctx.guild.id
-        db = sqlite3.connect('textresponder.db')
-        print("Opened database successfully")
-        cursor = db.cursor()
+        await updateServerCache()
+
         if responder == "":
             await ctx.send("You must enter a responder from the list below:")
             await ctx.send(embed=listresponders(ctx))
+            
         responder = responder.replace("_"," ")
-        responders = cursor.execute("SELECT * FROM RESPONDERS WHERE guildid = ?",(guildid,))
+        
+        triggers = servers[str(guildid)]["textresponder"]["triggers"]
         found = False
-        for row in responders:
-            if row[2] == responder:
+
+        for trigger in triggers:
+
+            if trigger == responder:
+
                 found = True
-                print("Responder found.")
-                cursor.execute("DELETE FROM RESPONDERS WHERE guildid = ? AND trigger = ?",(guildid,responder))
-                await ctx.send(f"Removed responder '{responder}' successfully.")
-                try:
-                    db.commit()
-                except:
-                    print("Failed to write changes to database.")
+                triggers.pop(trigger)
+                servers[str(guildid)]["textresponder"]["triggers"] = triggers
+                updateServerJson(servers)
+                await updateServerCache()
+                await ctx.send("Removed responder.")
+                break
         
         if found == False:
                 await ctx.send("Responder not found. Enter a trigger from the following list to remove it:")
                 await ctx.send(embed=listresponders(ctx))
-        db.close()
-
 
     @commands.command()
     async def responders(self,ctx):
         ## Retrieves and shows the server's text responders.
         embedVar = listresponders(ctx)
         await ctx.send(embed=embedVar)
+
+    @commands.command()
+    @commands.has_permissions(administrator = True)
+    async def textresponder(self, ctx, state):
+
+        servers = loadServerJson()
+
+        if state == "on" or state == "off":
+                
+            if state == "on":
+
+                state = 1
+                await ctx.send(embed = setembedvar("G","Welcome Module Enabled",f"{yep} Successfully enabled text responder module."))
+
+            elif state == "off":
+
+                state = 0
+                await ctx.send(embed = setembedvar("G","Welcome Module Disabled",f"{yep} Successfully disabled text responder module."))
+
+            servers[str(ctx.guild.id)]["textresponder"]["enabled"] = state
+            updateServerJson(servers)
+            await updateServerCache()
+
+        else:
+
+            await ctx.send(embed = setembedvar("R","Incorrect Syntax",f"{nope} Enter 'on' or 'off'."))
 
 def setup(bot):
     bot.add_cog(TextResponder(bot))
