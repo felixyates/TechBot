@@ -1,5 +1,6 @@
 import discord, json
 from discord.ext import commands
+from modules.getjson import loadServerJson, updateServerJson
 
 botServersChannel = 845051653451546684 # techbot, bot servers log channel
 
@@ -46,6 +47,7 @@ class Events(commands.Cog, name="events"):
         welcome = {}
         slurdetector = {}
         music = {}
+        textresponder = {}
 
         # assigning default values to dictionaries
             # 0 disables the feature
@@ -60,6 +62,9 @@ class Events(commands.Cog, name="events"):
         music["enabled"] = 0
         music["channel"] = "1"
 
+        textresponder["enabled"] = 0
+        textresponder["triggers"] = ""
+
         server["prefix"] = ">"
 
         # adding previous dictionaries to server dictionary
@@ -67,6 +72,7 @@ class Events(commands.Cog, name="events"):
         server["welcome"] = welcome
         server["slurdetector"] = slurdetector
         server["music"] = music
+        server["textresponder"] = textresponder
 
         # adds server dictionary to servers dictionary
 
@@ -89,6 +95,25 @@ class Events(commands.Cog, name="events"):
 
         with open('servers.json', 'w') as f: # deletes the guild
             json.dump(servers, f, indent=4)
+    
+    @commands.Cog.listener()
+    async def on_ready(self):
+
+        servers = loadServerJson()
+
+        for server in servers:
+
+            if "textresponder" in servers[server]:
+
+                print("Text responder exists.")
+            
+            else:
+                
+                textresponder = {}
+                textresponder["enabled"] = 0
+                textresponder["triggers"] = {}
+                servers[server]["textresponder"] = textresponder
+                updateServerJson(servers)
 
 def setup(bot):
     bot.add_cog(Events(bot))
