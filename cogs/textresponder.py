@@ -38,15 +38,17 @@ class TextResponder(commands.Cog, name="textresponder"):
     async def on_message(self,message):
         
         # Checks text responder database for guild triggers.
-        # If guild trigger matches [Type 1] (/contains [Type 2]) message, bot will send response.
-        # Type 1 - exact match, Type 2 - contains
+        # If guild trigger matches, bot will send response.
+        # Type 1 - exact match, Type 2 - contains, Type 3 - contains (case insensitive), Type 4 - exact (case insensitive)
 
         server = servers[str(message.guild.id)]
 
-        if server["textresponder"]["enabled"] == 1:
+        if server["textresponder"]["enabled"] == 1 and message.author.bot == False:
 
             textresponder = server["textresponder"]
             triggers = textresponder["triggers"]
+
+            send = False
 
             for trigger in triggers:
 
@@ -54,58 +56,91 @@ class TextResponder(commands.Cog, name="textresponder"):
 
                     if trigger == message.content:
 
-                        await message.channel.send(triggers[trigger]["response"])
+                        send = True
                 
                 elif triggers[trigger]["type"] == 2:
                 
                     if trigger in message.content:
 
-                        await message.channel.send(triggers[trigger]["response"])
+                        send = True
+                
+                elif triggers[trigger]["type"] == 3:
 
-    
+                    if trigger.upper() in message.content.upper():
+
+                        send = True
+                
+                elif triggers[trigger]["type"] == 4:
+
+                    if trigger.upper() == message.content.upper():
+
+                        send = True
+                
+                if send == True:
+
+                    await message.channel.send(triggers[trigger]["response"])
+
+
+
     @commands.command()
     @commands.has_permissions(manage_emojis=True)
     async def addresponder(self,ctx,type:int,request:str):
         ## Adds the requested text responder for the server. Use '_' for spaces and '=' to separate trigger and response.
 
         guildid = ctx.guild.id
+        await updateServerCache()
+        server = servers[str(guildid)]
         
         valid = True
         request = request.split('=')
 
-        if type != 1 and type != 2:
-            valid = False
-            await ctx.send("Valid responder types: 1 (exact match), 2 (contains)")
-
-        await updateServerCache()
-        server = servers[str(guildid)]
-        triggers = server["textresponder"]["triggers"]
-
         trigger,response = request[0],request[1]
-        trigger = trigger.replace("_"," ")
-        response = response.replace("_"," ")
+        server = servers[str(guildid)]
 
-        for responder in triggers:
+        if trigger != "" and response != "":
 
-            if responder == trigger:
+            if type != 1 and type != 2 and type != 3 and type != 4:
                 valid = False
-                await ctx.send(f"Responder already exists. Remove it using `{server['prefix']}removeresponder {trigger}` to add it again.")
-                break
+                await ctx.send("Valid responder types: 1 (exact match), 2 (contains)")
 
-        if valid == True:
+            triggers = server["textresponder"]["triggers"]
 
-            responder = {}
-            responder["type"] = type
-            responder["response"] = response
-            responder["added_by"] = ctx.message.author.id
-            triggers[trigger] = responder
-            servers[str(guildid)]["textresponder"]["triggers"] = triggers
+            
+            trigger = trigger.replace("_"," ")
+            response = response.replace("_"," ")
 
-            updateServerJson(servers)
-            await updateServerCache()
+            for responder in triggers:
 
-            await ctx.send("Added responder.")
-    
+                if responder == trigger:
+                    valid = False
+                    await ctx.send(f"Responder already exists. Remove it using `{server['prefix']}removeresponder {trigger}` to add it again.")
+                    break
+
+            if valid == True:
+
+                responder = {}
+                responder["type"] = type
+                responder["response"] = response
+                responder["added_by"] = ctx.message.author.id
+                triggers[trigger] = responder
+                servers[str(guildid)]["textresponder"]["triggers"] = triggers
+
+                updateServerJson(servers)
+                await updateServerCache()
+
+                await ctx.send("Added responder.")
+        
+        else:
+            
+            errorMsg = f"""The responder **must** have *one* trigger, and *one* response that cannot be blank, and should separated by the equals (`=`) character, with spaces denoted by the underscore (`_`) character.
+
+            Example: `{server["prefix"]}addresponder 1 hello=hello_world!`"""
+            embed = setembedvar("R","Incorrect Command Syntax", errorMsg)
+            embed.set_footer(text = f"Error triggered by {ctx.author.name} // {ctx.author.id}", icon_url = ctx.author.avatar_url)
+            await ctx.send(embed=embed)
+
+
+
     @commands.command()
     @commands.has_permissions(manage_emojis=True)
     async def removeresponder(self,ctx,responder: str):
@@ -139,6 +174,8 @@ class TextResponder(commands.Cog, name="textresponder"):
                 await ctx.send("Responder not found. Enter a trigger from the following list to remove it:")
                 await ctx.send(embed=listresponders(ctx))
 
+
+
     @commands.command()
     async def responders(self,ctx):
         ## Retrieves and shows the server's text responders.
@@ -156,12 +193,12 @@ class TextResponder(commands.Cog, name="textresponder"):
             if state == "on":
 
                 state = 1
-                await ctx.send(embed = setembedvar("G","Welcome Module Enabled",f"{yep} Successfully enabled text responder module."))
+                await ctx.send(embed = setembedvar("G","Text Responder Enabled",yep+" Successfully enabled text responder module.\nTechBot will now respond to set up text triggers."))
 
             elif state == "off":
 
                 state = 0
-                await ctx.send(embed = setembedvar("G","Welcome Module Disabled",f"{yep} Successfully disabled text responder module."))
+                await ctx.send(embed = setembedvar("G","Text Responder Disabled",yep+" Successfully disabled text responder module.\nTechBot will no longer respond to set up text triggers."))
 
             servers[str(ctx.guild.id)]["textresponder"]["enabled"] = state
             updateServerJson(servers)
@@ -169,7 +206,9 @@ class TextResponder(commands.Cog, name="textresponder"):
 
         else:
 
-            await ctx.send(embed = setembedvar("R","Incorrect Syntax",f"{nope} Enter 'on' or 'off'."))
+            await ctx.send(embed = setembedvar("R","Incorrect Command Syntax",f"{nope} Enter 'on' or 'off'."))
+
+
 
 def setup(bot):
     bot.add_cog(TextResponder(bot))

@@ -6,7 +6,7 @@ from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar
 from modules.emoji import tada_animated, dnd, online, offline, yep, nope, loading, wave_animated
-from modules.getjson import loadServerJson, get_prefix
+from modules.getjson import loadServerJson, get_prefix, updateServerJson
 
 global maintenanceStatus, onlineVar, statusChannel
 onlineVar = setembedvar("G",f"{online} Online",f"TechBot is back online and reporting for duty!",False)
@@ -218,9 +218,8 @@ class Owner(commands.Cog, name="owner"):
     
     @commands.command()
     @commands.is_owner()
-    async def echo(self, ctx, message):
+    async def echo(self, ctx):
         await ctx.send(ctx.message.content.split("echo ")[1])
-            
 
 def setup(bot):
     bot.add_cog(Owner(bot))

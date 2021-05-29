@@ -8,6 +8,9 @@ from modules.getjson import loadServerJson, updateServerJson
 class ChannelDoesNotExist(Exception):
     pass
 
+class Cancelled(Exception):
+    pass
+
 def channelCheck(self, ctx, channelID):
 
     channelExists = False
@@ -188,8 +191,10 @@ class Administration(commands.Cog, name="administration"):
                     if msg.content == "cancel":
                         cancelled = True
                         await ctx.send(embed=cancelledVar)
+                        raise Cancelled
                     else:
                         shouldContinue, success1, welcomeChannel = await doesChannelExist(int(msg.content))
+                        return shouldContinue, success1, welcomeChannel
 
                 except asyncio.TimeoutError:
                     hasTimedOut = True
@@ -203,7 +208,6 @@ class Administration(commands.Cog, name="administration"):
                     await ctx.send(embed=setembedvar("R","Channel does not exist",f"{nope} Make sure you entered the right channel ID.",))
 
             print("Exited welcome message channel loop.")
-            return shouldContinue, success1, welcomeChannel
 
         async def welcomeMessage():
             await ctx.send(embed=setembedvar("G","Welcome Message Setup","OK, now what's the welcome message?\nYou can use the placeholders {member} and {servername}.",).set_footer(text="Or, enter `cancel` to cancel."))

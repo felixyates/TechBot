@@ -20,7 +20,7 @@ class Other(commands.Cog, name="other"):
     
     @commands.Cog.listener()
     async def on_message(self,message):
-        if self.bot.user.mentioned_in(message) and message.author.bot == False and not ("@everyone" in message.content or "@here" in message.content):
+        if self.bot.user.mentioned_in(message) and message.author.bot == False and message.content[3:] == self.bot.user.mention[2:]:
             prefix = get_prefix(self, message)
             await message.channel.send(f"Hey, {message.author.mention}! My prefix for this server is `{prefix}`. Run `{prefix}help` for, you guessed it, help :)")
 
@@ -39,15 +39,6 @@ class Other(commands.Cog, name="other"):
             await ctx.send(a + b)
 
     @commands.command()
-    async def servers(self,ctx):
-        "Lists some cool beans servers you should join"
-        serversVar = discord.Embed(color=0x00ff00,title="Servers",description="Here are some pretty cool beans servers you should join")
-        serversVar.add_field(name="Gaming Servers",value="[The Dead One](https://discord.gg/wWdr9bf)\n[The Active One](https://discord.gg/VQ6XBy9hZ8)")
-        serversVar.add_field(name="The Dev's Server",value="[TechLife](https://techlifeyt.com/discord)", inline=False)
-        serversVar = requestedbyfooter(serversVar,ctx.message)
-        await ctx.message.channel.send(embed=serversVar)
-
-    @commands.command()
     async def ping(self,ctx):
         "Returns 'pong' if the bot is active"
         pingVar = discord.Embed(color=0xff0000,title="🏓 Pong!",description=f"TechBot's ping to Discord is **{round(self.bot.latency *1000)}** ms!")
@@ -64,16 +55,12 @@ class Other(commands.Cog, name="other"):
         The prefix for this server (`{ctx.guild.name}`) is `{get_prefix(self,ctx)}`"""
 
         helpVar = setembedvar("G","Commands",helpVarMsg,url=techbotCmdsURL,author="TechLife", author_url=techlifeLinksURL, author_icon=techlifeIconURL)
-        randomNumber = random.randint(1,3)
-        if randomNumber == 1:
-            helpVar.add_field(name="Join the developer's server!", value="[Click here](https://www.techlifeyt.com/discord)", inline=False)
-        elif randomNumber == 2:
-            helpVar.add_field(name="Support TechBot", value="[Patreon](https://www.techlifeyt.com/patreon)", inline=False)
-        elif randomNumber == 3:
-            helpVar.add_field(name="Are you subscribed?", value="[YouTube](https://www.techlifeyt.com/youtube)", inline=False)
+        helpVar.add_field(name = "Get Support", value="Need help, or want to report a bug? Join the [support server](https://www.techlifeyt.com/techbot) for help.")
         helpVar = requestedbyfooter(helpVar,ctx.message)
         await ctx.message.channel.send(embed=helpVar)
-    
+
+
+
     @commands.command()
     async def serverinfo(self, ctx):
 
@@ -83,12 +70,14 @@ class Other(commands.Cog, name="other"):
         welcome = server["welcome"]
         music = server["music"]
         slurDetector = server["slurdetector"]
+        textResponder = server["textresponder"]
 
         enabledList = []
 
         enabledList.append(welcome['enabled'])
         enabledList.append(music['enabled'])
         enabledList.append(slurDetector['enabled'])
+        enabledList.append(textResponder['enabled'])
 
         for i in range(len(enabledList)):
             if enabledList[i] == 0:
@@ -98,7 +87,8 @@ class Other(commands.Cog, name="other"):
 
         moduleField = f"""Welcome: {enabledList[0]}
         Music: {enabledList[1]}
-        Slur Detector: {enabledList[2]}"""
+        Slur Detector: {enabledList[2]}
+        Text Responder: {enabledList[3]}"""
 
         embed.add_field(name="Name", value=ctx.guild.name)
         embed.add_field(name="Members", value=ctx.guild.member_count)
