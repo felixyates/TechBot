@@ -125,7 +125,6 @@ class SlurDetector(commands.Cog, name="slurdetector"):
             caseTotal = tempCases["caseTotal"]
             tempCases.pop("caseTotal")
             for item in range(1,caseTotal+1):
-                print(tempCases[str(item)]["modMessage"])
                 if tempCases[str(item)]["modMessage"] == payload.message_id:
                     match = True
 

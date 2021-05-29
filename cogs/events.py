@@ -2,7 +2,11 @@ import discord, json
 from discord.ext import commands
 from modules.getjson import loadServerJson, updateServerJson
 
+
+
 botServersChannel = 845051653451546684 # techbot, bot servers log channel
+
+
 
 async def servermessage(self, guild, type):
 
@@ -19,10 +23,16 @@ async def servermessage(self, guild, type):
     message = f"{beginning} server `{guild.name}` with `{guild.member_count}` members, owned by `{guild.owner.name}` (user ID `{guild.owner.id}`)."
     await serversChannel.send(message)
 
+
+
 class Events(commands.Cog, name="events"):
+
+
 
     def __init__(self, bot):
         self.bot = bot
+
+
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
@@ -80,7 +90,9 @@ class Events(commands.Cog, name="events"):
 
         with open('servers.json', 'w') as f:
             json.dump(servers, f, indent=4)
-    
+
+
+
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
 
@@ -95,25 +107,22 @@ class Events(commands.Cog, name="events"):
 
         with open('servers.json', 'w') as f: # deletes the guild
             json.dump(servers, f, indent=4)
-    
+
+
+
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_member_join(self,member):
 
         servers = loadServerJson()
+        server = servers[str(member.guild.id)]
+        welcome = server["welcome"]
 
-        for server in servers:
+        if welcome["enabled"] == 1:
+            welcomeChannel = self.bot.get_channel(int(welcome["channel"]))
+            welcomeMessage = welcome["message"].replace("{member}",member.mention).replace("{servername}",member.guild.name)
+            await welcomeChannel.send(welcomeMessage)
 
-            if "textresponder" in servers[server]:
 
-                print("Text responder exists.")
-            
-            else:
-                
-                textresponder = {}
-                textresponder["enabled"] = 0
-                textresponder["triggers"] = {}
-                servers[server]["textresponder"] = textresponder
-                updateServerJson(servers)
 
 def setup(bot):
     bot.add_cog(Events(bot))
