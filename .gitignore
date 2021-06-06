@@ -1,4 +1,6 @@
 *.pyc
 *.db
 *.json
+*.docx
 servers.json
+*.vscode

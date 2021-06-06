@@ -1,10 +1,11 @@
-import discord, os, asyncio, requests, base64, json
+import discord, os, asyncio, requests, base64, json, spotipy
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 from async_timeout import timeout
 from modules.embedvars import setembedvar
 from modules.emoji import upvote,downvote,nope
 from modules.getjson import secret, loadServerJson
+from spotipy import SpotifyClientCredentials
 
 ## Send a YouTube / Spotify URL and TechBot will react with upvote and downvote
 ## Future versions will delete the original message and send an embed with:
@@ -183,7 +184,6 @@ def youtubeChannelEmbed(channel_id, message):
         return embed
     else:
         raise findError
-    
 
 
 
@@ -210,9 +210,11 @@ def getAccessToken(client_id, client_secret):
 
 
 
-def getSpotifyInfo(accessToken,type,id):
+def getSpotifyInfo(accessToken, type="", id="", endpoint=""):
 
-    endpoint = f"https://api.spotify.com/v1/{type}/{id}"
+    if endpoint == "":
+
+        endpoint = f"https://api.spotify.com/v1/{type}/{id}"
 
     getHeader = {
         "Authorization": "Bearer " + accessToken
@@ -517,6 +519,62 @@ def spotifyTrackEmbed(track,message):
     embed.set_footer(text=f"Song recommended by {authorName}",icon_url=authorAvatar)
     return embed
 
+
+
+def spotifyUserEmbed(user,message):
+    
+    display_name = user["display_name"]
+    url = user["external_urls"]["spotify"]
+    followers = user["followers"]["total"]
+
+    try:
+        pfp = user["images"][0]["url"]
+    except:
+        pfp = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
+
+    accessToken = getAccessToken(client_id, client_secret)
+    playlists = getSpotifyInfo(accessToken, endpoint = f"https://api.spotify.com/v1/users/{user['id']}/playlists?limit=5")
+
+    playlistStr = ""
+    pos = 0
+    items = playlists["items"]
+    has_playlists = False
+
+    if len(items) > 0:
+
+        has_playlists = True
+
+        for x in items:
+
+            pos += 1
+            playlistStr = playlistStr + f"{pos}. [{x['name']}]({x['external_urls']['spotify']})" + "\n"
+
+        remaining = playlists['total'] - pos
+
+        if remaining > 0:
+
+            playlistStr = playlistStr + f"+ {remaining} more"
+
+        firstPlaylistThumbnail = playlists["items"][0]["images"][0]["url"]
+    
+    if has_playlists == True:
+
+        embed = setembedvar(spotifyColour, title="", author=display_name, author_url=url, author_icon=pfp, thumbnail = firstPlaylistThumbnail)
+        embed.add_field(name = "Followers", value = followers)
+        embed.add_field(name = "Public Playlists", value = playlistStr, inline=False)
+    
+    else:
+
+        embed = setembedvar(spotifyColour, title="", author=display_name, author_url=url, author_icon=pfp)
+        embed.add_field(name = "Followers", value = followers)
+        embed.add_field(name = "No Public Playlists", value="Make sure they're public.", inline=False)
+
+    embed.set_footer(text = f"User recommended by {message.author.name}", icon_url = message.author.avatar_url)
+
+    return embed
+
+
+
 class Music(commands.Cog, name="music"):
 
     def __init__(self, bot):
@@ -525,7 +583,7 @@ class Music(commands.Cog, name="music"):
     @commands.Cog.listener()
     async def on_message(self,message):
 
-        if message.author.bot == False:
+        if message.author.bot == False and message.guild != None:
 
             servers = loadServerJson()
             music = servers[str(message.guild.id)]["music"]
@@ -605,6 +663,15 @@ class Music(commands.Cog, name="music"):
                         album = getSpotifyInfo(accessToken,"albums",album_id)
                         albumEmbed = spotifyAlbumEmbed(album,message)
                         botMsg = await message.channel.send(embed=albumEmbed)
+                    
+                    elif "open.spotify.com/user/" in message.content:
+                        user_id = message.content.replace("https://www.open.spotify.com/user/","")
+                        user_id = message.content.replace("https://open.spotify.com/user/","")
+                        user_id = user_id.split("?")[0]
+                        accessToken = getAccessToken(client_id, client_secret)
+                        user = getSpotifyInfo(accessToken,"users",user_id)
+                        userEmbed = spotifyUserEmbed(user,message)
+                        botMsg = await message.channel.send(embed=userEmbed)
 
                 elif source == "youtube":
                     
