@@ -41,7 +41,13 @@ class TextResponder(commands.Cog, name="textresponder"):
         # If guild trigger matches, bot will send response.
         # Type 1 - exact match, Type 2 - contains, Type 3 - contains (case insensitive), Type 4 - exact (case insensitive)
 
-        server = servers[str(message.guild.id)]
+        try:
+
+            server = servers[str(message.guild.id)]
+
+        except:
+
+            return
 
         if server["textresponder"]["enabled"] == 1 and message.author.bot == False:
 
@@ -79,6 +85,7 @@ class TextResponder(commands.Cog, name="textresponder"):
                 if send == True:
 
                     await message.channel.send(triggers[trigger]["response"])
+                    break
 
 
 

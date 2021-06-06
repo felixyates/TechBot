@@ -7,10 +7,10 @@ from async_timeout import timeout
 from modules.embedvars import setembedvar
 from modules.emoji import tada_animated, dnd, online, offline, yep, nope, loading, wave_animated
 from modules.getjson import loadServerJson, get_prefix, updateServerJson
+from modules.variables import statusChannel
 
-global maintenanceStatus, onlineVar, statusChannel
+global maintenanceStatus, onlineVar
 onlineVar = setembedvar("G",f"{online} Online",f"TechBot is back online and reporting for duty!",False)
-statusChannel = 788802645070053377 # techbot, status
 maintenanceStatus = 0
 
 @loop(seconds=60)
@@ -220,6 +220,39 @@ class Owner(commands.Cog, name="owner"):
     @commands.is_owner()
     async def echo(self, ctx):
         await ctx.send(ctx.message.content.split("echo ")[1])
+
+    @commands.command()
+    @commands.is_owner()
+    async def load(self, ctx, extension):
+        try:
+            self.bot.load_extension(f'cogs.{extension}')
+            embedVar = setembedvar("G","Successful Load",f"{yep} Successfully loaded "+ extension)
+            await ctx.message.channel.send(embed=embedVar)
+        except Exception as e:
+            embedVar = setembedvar("R","Unsuccessful Load",f"{nope} Couldn't load "+ extension+ "\n"+f"`{e}`")
+            await ctx.message.channel.send(embed=embedVar)
+
+    @commands.command()
+    @commands.is_owner()
+    async def unload(self, ctx, extension):
+        try:
+            self.bot.unload_extension(f'cogs.{extension}')
+            embedVar = setembedvar("G","Successful Unload",f"{yep} Successfully unloaded "+ extension)
+            await ctx.message.channel.send(embed=embedVar)
+        except Exception as e:
+            embedVar = setembedvar("R","Unsuccessful Unload",f"{nope} Couldn't unload "+ extension+ "\n"+f"`{e}`")
+            await ctx.message.channel.send(embed=embedVar)
+
+    @commands.command()
+    @commands.is_owner()
+    async def reload(self, ctx, extension):
+        try:
+            self.bot.reload_extension(f'cogs.{extension}')
+            embedVar = setembedvar("G","Successful Reload",f"{yep} Successfully reloaded "+ extension)
+            await ctx.message.channel.send(embed=embedVar)
+        except Exception as e:
+            embedVar = setembedvar("R","Unsuccessful Reload",f"{nope} Couldn't reload "+ extension+ "\n"+f"`{e}`")
+            await ctx.message.channel.send(embed=embedVar)
 
 def setup(bot):
     bot.add_cog(Owner(bot))

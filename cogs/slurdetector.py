@@ -96,8 +96,15 @@ class SlurDetector(commands.Cog, name="slurdetector"):
     async def on_message(self,message):
 
         global incidentguild, detectedSlur
-        incidentguild = message.guild
-        guildid = incidentguild.id
+
+        try:
+
+            incidentguild = message.guild
+            guildid = incidentguild.id
+        
+        except:
+
+            return
         
         servers = loadServerJson()
         server = servers[str(guildid)]

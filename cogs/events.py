@@ -1,10 +1,8 @@
-import discord, json
+import discord, json, datetime
 from discord.ext import commands
-from modules.getjson import loadServerJson, updateServerJson
-
-
-
-botServersChannel = 845051653451546684 # techbot, bot servers log channel
+from modules.getjson import loadServerJson
+from modules.variables import botServersChannel, dmChannel
+from modules.embedvars import setembedvar
 
 
 
@@ -121,6 +119,21 @@ class Events(commands.Cog, name="events"):
             welcomeChannel = self.bot.get_channel(int(welcome["channel"]))
             welcomeMessage = welcome["message"].replace("{member}",member.mention).replace("{servername}",member.guild.name)
             await welcomeChannel.send(welcomeMessage)
+
+
+
+    @commands.Cog.listener()
+    async def on_message(self,message):
+        
+        if message.author.bot == False:
+            
+            if isinstance(message.channel, discord.channel.DMChannel):
+
+                directMessageChannel = self.bot.get_channel(dmChannel)
+                dmEmbed = discord.Embed(color = 0x00ff00, timestamp = datetime.datetime.utcnow(), description = message.content)
+                dmEmbed.set_author(name = message.author.name, icon_url = message.author.avatar_url)
+                dmEmbed.set_footer(text = f"User ID: {message.author.id}")
+                await directMessageChannel.send(embed = dmEmbed)
 
 
 
