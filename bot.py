@@ -1,10 +1,7 @@
 import discord, os
 from discord.ext import commands
-from discord.ext.commands import CommandNotFound, MissingRequiredArgument
-from modules.embedvars import setembedvar
 from modules.getjson import secret, get_prefix
-from modules.variables import errorChannel
-from cogs.administration import Cancelled as setup_cancelled
+from discord_slash import SlashCommand
 
 TOKEN = secret("discord")
 
@@ -12,45 +9,13 @@ intents = discord.Intents().all()
 intents.members = True
 intents.guilds = True
 bot = commands.Bot(command_prefix=get_prefix, intents = intents)
+slash = SlashCommand(bot, sync_commands=True, sync_on_cog_reload=True)
 
-@bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, CommandNotFound):
-        return
-    elif isinstance(error, MissingRequiredArgument):
-        await ctx.send(embed=setembedvar("R","Command Missing Argument(s)",f"`{str(error)}`"))
-        return
-    elif isinstance(error, setup_cancelled):
-        return
-    else:
-        
-        channel = bot.get_channel(errorChannel)
+commandWarningEmbed = discord.Embed(title="Notice: Classic Commands are Going Away", description="Classic commands are being replaced in favour of slash commands. Try typing `/` to see all of TechBot's commands and their descriptions. Don't see them? Try granting the bot [slash permissions](https://techlifeyt.com/invite-techbot), or join the [support server](https://techlifeyt.com/techbot).")
 
-        if isinstance(ctx.channel, discord.channel.DMChannel):
+async def commandWarning(ctx):
 
-            guildName = "Private DM"
-            guildID = "N/A"
-        
-        else:
-
-            guildName = ctx.guild.name
-            guildID = ctx.guild.id
-
-        embed = setembedvar("R","An Error Occurred")
-        embed.add_field(name="Command Issuer", value=f"`{ctx.author.name} // {ctx.author.id}`")
-        embed.add_field(name="Message", value=f"`{ctx.message.content}`")
-        embed.add_field(name="Guild Name", value=f"`{guildName}`")
-        embed.add_field(name="Guild ID", value=f"`{guildID}`")
-        embed.add_field(name="Channel ID", value=f"`{ctx.channel.id}`")
-        embed.add_field(name="Error Contents", value=f"`{str(error)}`", inline=False)
-
-        public_embed = setembedvar("R","An Error Occurred")
-        public_embed.add_field(name="Error Contents", value=f"`{str(error)}`", inline=False)
-        public_embed.add_field(name="Get Support", value="Need help, or want to report a bug? Join the [support server](https://www.techlifeyt.com/techbot) for help.", inline = False)
-        public_embed.set_footer(text = f"Error triggered by {ctx.author.name} // {ctx.author.id}", icon_url = ctx.author.avatar_url)
-
-        await ctx.send(embed=public_embed)
-        await channel.send(embed=embed)
+    await ctx.reply(embed=commandWarningEmbed, mention_author=False)
 
 bot.remove_command("help")
 

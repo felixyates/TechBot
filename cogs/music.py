@@ -1,16 +1,10 @@
 import discord, asyncio, spotipy, pyyoutube
 from discord.ext import commands
 from modules.embedvars import setembedvar
-from modules.emoji import upvote,downvote
+from modules.emoji import upvote,downvote,nope
 from modules.getjson import secret, loadServerJson
 from spotipy import SpotifyClientCredentials
-
-## Send a YouTube / Spotify URL and TechBot will react with upvote and downvote
-## Future versions will delete the original message and send an embed with:
-    ## Album art
-    ## Track/playlist length
-    ## Recommended by
-    ## Etc.
+from discord_slash import cog_ext
 
 spotifyURL1 = "https://open.spotify.com/"
 spotifyURL2 = "https://www.open.spotify.com/"
@@ -628,6 +622,99 @@ class Music(commands.Cog, name="music"):
                     if source != "unsupported" and botMsg != None:
                         await botMsg.add_reaction(upvote)
                         await botMsg.add_reaction(downvote)
+
+    songinfo_options = [{"name":"url","description":"The Spotify URL of the song.","type":3,"required":"true"}]
+    @cog_ext.cog_slash(name="songinfo", description="Gives info about a Spotify song.", options=songinfo_options)
+    async def slash_songinfo(self, ctx, url):
+
+        if url.startswith(spotifyURL1) == True or url.startswith(spotifyURL2) == True:
+
+            id = url.replace(f"{spotifyURL1}track/","")
+            id = id.replace(f"{spotifyURL2}track/","")
+            id = id.split("?")[0]
+
+            track = sp.track(id)
+            print(track)
+            tr_adv = sp.audio_features(id)[0]
+
+            name = track["name"]
+            url = track["external_urls"]["spotify"]
+            preview_url = track["preview_url"]
+
+            danceability = f'{round(tr_adv["danceability"]*100, 1)}%'
+            energy = f'{round(tr_adv["energy"]*100, 1)}%'
+            key = tr_adv["key"]
+            tempo = round(tr_adv["tempo"], 1)
+
+            # Calculating track length and formatting it appropriately.
+
+            durationSecs = (track["duration_ms"]/1000)
+            durationMins = durationSecs // 60
+            remainderSecs = round(durationSecs - (durationMins*60))
+
+            if remainderSecs < 10:
+                remainderSecs = f"0{remainderSecs}"
+
+            duration = f"{int(durationMins)}:{remainderSecs}"
+
+            # Getting artist information.
+
+            artists = track["artists"]
+            artistsName = []
+
+
+            mainArtist = track["artists"][0]
+            mainArtistID = mainArtist["id"]
+            mainArtistName = mainArtist["name"]
+            mainArtistURL = mainArtist["external_urls"]["spotify"]
+            mainArtistObject = sp.artist(mainArtistID)
+            
+
+            for i in range(len(artists)):
+                artistID = artists[i]["id"]
+                artistObject = sp.artist(artistID)
+                artistURL = artistObject["external_urls"]["spotify"]
+                tempArtist = []
+                tempArtist.append(artists[i]["name"])
+                tempArtist.append(artistURL)
+                artistsName.append(tempArtist)
+            
+            # Getting artist's icon from artist object
+            
+            try:
+                mainArtist_icon = mainArtistObject["images"]
+                mainArtist_icon = mainArtist_icon[(len(mainArtist_icon)-1)]["url"]
+            except:
+                mainArtist_icon = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
+
+            # Getting album information and cover image.
+
+            album = track["album"]
+            album_name = album["name"]
+            album_url = album["external_urls"]["spotify"]
+            album_image = album["images"]
+            album_image = album_image[0]["url"]
+
+            embed = discord.Embed(title = name, url = url)
+            embed.set_author(name = mainArtistName, url = mainArtistURL, icon_url = mainArtist_icon)
+            embed.add_field(name = "Album", value = f"[{album_name}]({album_url})")
+            embed.set_thumbnail(url=album_image)
+
+            if preview_url != None:
+                embed.add_field(name = "Preview", value = f"[Download]({preview_url})")
+
+            embed.add_field(name = "Duration", value = duration)
+            embed.add_field(name = "Danceability", value = danceability)
+            embed.add_field(name = "Energy", value = energy)
+            embed.add_field(name = "Key", value = key)
+            embed.add_field(name = "Tempo", value = tempo)
+            await ctx.send(embed = embed)
+
+        else:
+
+            print("Failed.")
+            await ctx.send(f"{nope} Invalid Spotify URL. Please make sure it is exactly as you copied it.")
+
 
 def setup(bot):
     bot.add_cog(Music(bot))
