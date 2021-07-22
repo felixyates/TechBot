@@ -4,6 +4,8 @@ from discord.ext.commands import has_permissions
 from modules.embedvars import setembedvar
 from modules.emoji import yep, nope, tada_animated
 from modules.getjson import loadServerJson, updateServerJson
+from discord_slash import cog_ext
+from bot import commandWarning
 
 class ChannelDoesNotExist(Exception):
     pass
@@ -96,7 +98,12 @@ class Administration(commands.Cog, name="administration"):
         
         await ctx.send(embed = setembedvar("G","Prefix changed",f"{yep} Successfully changed prefix to: {prefix}"))
         await ctx.message.guild.me.edit(nick=f"[{prefix}] TechBot")
+        await commandWarning(ctx)
     
+    state_choices = [{"name":"On","value":"on"},{"name":"Off","value":"off"}]
+    state_options = [{"name":"state","description":"Whether the module is on or off.","type":3,"choices":state_choices,"required":"true"}]
+
+    @cog_ext.cog_subcommand(name="status", base="music", description="Turns the music module on/off.", options=state_options)
     @commands.command()
     @commands.has_permissions(administrator = True)
     async def music(self, ctx, state):
@@ -128,7 +135,46 @@ class Administration(commands.Cog, name="administration"):
         else:
 
             await ctx.send(embed = setembedvar("R","Music Channel Unset",f"{nope} Set up the music module first ({server['prefix']}musicsetup <channel-id>)"))
-    
+
+
+    musicsetup_options = [{"name":"channel","description":"The channel for the module to be active in.","type":7,"required":"true"}]
+    @cog_ext.cog_subcommand(name="setup", base="music", description="Sets the server's music channel.", options=musicsetup_options)
+    @commands.command()
+    @commands.has_permissions(administrator = True)
+    async def musicsetup(self, ctx, channelID):
+
+        ## Allows guild admins to use the music module in their own server.
+        ## Syntax: >musicsetup <music-channel-id>
+
+        channelExists = False
+        shouldContinue = True
+
+        try:
+            channelID = int(channelID)
+        except ValueError:
+            await ctx.send(embed=setembedvar("R","Incorrect Message Type",f"{nope} Make sure you entered a channel ID, which should be an integer."))
+            shouldContinue = False
+
+        for guild in self.bot.guilds:
+            if guild.id == ctx.guild.id:
+                for channel in guild.text_channels:
+                    if channel.id == channelID:
+                        channelExists = True
+                        await ctx.send(embed=setembedvar("G","Channel exists",f"{yep} Music module enabled and channel set to <#{channelID}>."))
+                        
+                        servers = loadServerJson()
+                        server = servers[str(guild.id)]
+                        server["music"]["enabled"] = 1
+                        server["music"]["channel"] = str(channelID)
+                        servers[str(guild.id)] = server
+                        updateServerJson(servers)
+
+        if channelExists == False and shouldContinue == True:
+            await ctx.send(embed=setembedvar("R","Channel does not exist",f"{nope} Make sure you entered the right channel ID."))
+
+
+
+    @cog_ext.cog_subcommand(name="setup", base="welcome", description="Sets the server's welcome channel.")
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def welcomesetup(self,ctx):
@@ -260,39 +306,8 @@ class Administration(commands.Cog, name="administration"):
         servers[str(guildid)] = server
         updateServerJson(servers)
     
-    @commands.command()
-    @commands.has_permissions(administrator = True)
-    async def musicsetup(self, ctx, channelID):
-
-        ## Allows guild admins to use the music module in their own server.
-        ## Syntax: >musicsetup <music-channel-id>
-
-        channelExists = False
-        shouldContinue = True
-
-        try:
-            channelID = int(channelID)
-        except ValueError:
-            await ctx.send(embed=setembedvar("R","Incorrect Message Type",f"{nope} Make sure you entered a channel ID, which should be an integer."))
-            shouldContinue = False
-
-        for guild in self.bot.guilds:
-            if guild.id == ctx.guild.id:
-                for channel in guild.text_channels:
-                    if channel.id == channelID:
-                        channelExists = True
-                        await ctx.send(embed=setembedvar("G","Channel exists",f"{yep} Music module enabled and channel set to <#{channelID}>."))
-                        
-                        servers = loadServerJson()
-                        server = servers[str(guild.id)]
-                        server["music"]["enabled"] = 1
-                        server["music"]["channel"] = str(channelID)
-                        servers[str(guild.id)] = server
-                        updateServerJson(servers)
-
-        if channelExists == False and shouldContinue == True:
-            await ctx.send(embed=setembedvar("R","Channel does not exist",f"{nope} Make sure you entered the right channel ID."))
     
+    @cog_ext.cog_subcommand(name="setup", base="slurdetector", description="Sets the slur detector moderation channel.")
     @commands.command()
     @commands.has_permissions(administrator = True)
     async def slurdetectorsetup(self, ctx, channelID):
@@ -321,6 +336,7 @@ class Administration(commands.Cog, name="administration"):
         if channelExists == False and shouldContinue == True:
             await ctx.send(embed=setembedvar("R","Channel does not exist",f"{nope} Make sure you entered the right channel ID."))
 
+    @cog_ext.cog_subcommand(name="state", base="slurdetector", description="Turns the slur detector on/off.")
     @commands.command()
     @commands.has_permissions(administrator = True)
     async def slurdetector(self, ctx, state):
@@ -353,6 +369,7 @@ class Administration(commands.Cog, name="administration"):
 
             await ctx.send(embed = setembedvar("R","Slur Detector Moderation Channel Unset",f"{nope} Set up the slur detector module first"+"\n"+f"({server['prefix']}slurdetectorsetup <channel-id>)"))
     
+    @cog_ext.cog_subcommand(name="state", base="welcome", description="Turns the welcome message on/off.")
     @commands.command()
     @commands.has_permissions(administrator = True)
     async def welcome(self, ctx, state):
@@ -384,6 +401,8 @@ class Administration(commands.Cog, name="administration"):
         else:
 
             await ctx.send(embed = setembedvar("R","Welcome Channel Unset",f"{nope} Set up the welcome module first"+"\n"+f"({server['prefix']}welcomesetup)"))
+
+
 
 def setup(bot):
     bot.add_cog(Administration(bot))

@@ -1,16 +1,13 @@
-import discord, os, asyncio
-from discord.ext import commands, tasks
+import discord
+from discord.ext import commands
 from discord.ext.tasks import loop
 from asyncio import sleep
-from discord.ext.commands import has_permissions
-from async_timeout import timeout
 from modules.embedvars import setembedvar
-from modules.emoji import tada_animated, dnd, online, offline, yep, nope, loading, wave_animated
-from modules.getjson import loadServerJson, get_prefix, updateServerJson
+from modules.emoji import dnd, online, offline, yep, nope, loading, wave_animated
+from modules.getjson import loadServerJson
 from modules.variables import statusChannel
 
-global maintenanceStatus, onlineVar
-onlineVar = setembedvar("G",f"{online} Online",f"TechBot is back online and reporting for duty!",False)
+onlineVar = setembedvar("G",f"{online} Online",f"TechBot is back online and reporting for duty!")
 maintenanceStatus = 0
 
 @loop(seconds=60)
@@ -253,6 +250,8 @@ class Owner(commands.Cog, name="owner"):
         except Exception as e:
             embedVar = setembedvar("R","Unsuccessful Reload",f"{nope} Couldn't reload "+ extension+ "\n"+f"`{e}`")
             await ctx.message.channel.send(embed=embedVar)
+
+
 
 def setup(bot):
     bot.add_cog(Owner(bot))
