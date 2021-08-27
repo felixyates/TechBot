@@ -6,3 +6,4 @@ servers.json
 *.vscode
 .cache
 cogs/blocklist.txt
+.DS_Store

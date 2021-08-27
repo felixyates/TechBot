@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from cogs.administration import Cancelled as setup_cancelled
 from modules.getjson import loadServerJson
-from modules.variables import botServersChannel, dmChannel, errorChannel
+from modules.variables import botServersChannel, dmChannel, errorChannel, defaultPrefix
 from modules.embedvars import setembedvar
 from modules.emoji import nope
 
@@ -23,7 +23,7 @@ async def servermessage(self, guild, type):
 
         beginning = "- Left"
 
-    message = f"{beginning} server `{guild.name}` with `{guild.member_count}` members, owned by `{guild.owner.name}` (user ID `{guild.owner.id}`)."
+    message = f"{beginning} `{guild.name}` - `{guild.member_count}` members; owned by `{guild.owner.name}` (`{guild.owner.id}`)."
     await serversChannel.send(message)
 
 class Events(commands.Cog, name="events"):
@@ -73,7 +73,7 @@ class Events(commands.Cog, name="events"):
         textresponder["enabled"] = 0
         textresponder["triggers"] = {}
 
-        server["prefix"] = ">"
+        server["prefix"] = defaultPrefix
 
         # adding previous dictionaries to server dictionary
 

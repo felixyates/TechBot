@@ -9,8 +9,7 @@ from discord_slash import cog_ext
 async def kick(self, ctx, member: discord.User, *, reason = ""):
 
     await ctx.guild.kick(member, reason=f"Kicked by {ctx.author.name} // {ctx.author.id}: {reason}")
-
-    working = await ctx.send("Working on it...")
+    
     embed = discord.Embed(color = 0x00ff00, title = f"Kicked {member.name}", description = f"Successfully kicked {member.mention}.", timestamp = datetime.datetime.now())
 
     if reason == "":
@@ -20,8 +19,7 @@ async def kick(self, ctx, member: discord.User, *, reason = ""):
 
     embed.set_footer(text = f"Kicked by {ctx.author.name} // {ctx.author.id}", icon_url = ctx.author.avatar_url)
 
-    await ctx.channel.send(embed = embed)
-    await working.delete()
+    await ctx.send(embed = embed)
 
 async def ban(self, ctx, member: discord.User, *, reason= ""):
     "Simple ban command"
