@@ -16,9 +16,6 @@ with open("cogs/blocklist.txt","r") as slurfile:
     for i in range(len(blockedwords)):
         blockedwords[i] = blockedwords[i].strip("\n").split(",")
 
-def reactionCheck(r):
-    print("")
-
 def loadCases():
     with open('cases.json', 'r') as f:
         cases = json.load(f)

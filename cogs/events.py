@@ -26,16 +26,10 @@ async def servermessage(self, guild, type):
     message = f"{beginning} server `{guild.name}` with `{guild.member_count}` members, owned by `{guild.owner.name}` (user ID `{guild.owner.id}`)."
     await serversChannel.send(message)
 
-
-
 class Events(commands.Cog, name="events"):
-
-
 
     def __init__(self, bot):
         self.bot = bot
-
-
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
@@ -95,8 +89,6 @@ class Events(commands.Cog, name="events"):
         with open('servers.json', 'w') as f:
             json.dump(servers, f, indent=4)
 
-
-
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
 
@@ -112,8 +104,6 @@ class Events(commands.Cog, name="events"):
         with open('servers.json', 'w') as f: # deletes the guild
             json.dump(servers, f, indent=4)
 
-
-
     @commands.Cog.listener()
     async def on_member_join(self,member):
 
@@ -125,8 +115,6 @@ class Events(commands.Cog, name="events"):
             welcomeChannel = self.bot.get_channel(int(welcome["channel"]))
             welcomeMessage = welcome["message"].replace("{member}",member.mention).replace("{servername}",member.guild.name)
             await welcomeChannel.send(welcomeMessage)
-
-
 
     @commands.Cog.listener()
     async def on_message(self,message):
@@ -151,16 +139,12 @@ class Events(commands.Cog, name="events"):
                         attachmentEmbed.set_footer(text = f"User ID: {message.author.id}")
                         await directMessageChannel.send(embed = attachmentEmbed)                
 
-
-
     @commands.Cog.listener()
     async def on_slash_command_error(self, ctx, ex):
         if isinstance(ex, discord.ext.commands.errors.MissingPermissions):
             await ctx.send(f"{nope} {ex}")
         elif isinstance(ex, discord.ext.commands.errors.NotOwner):
             await ctx.send(f"{nope} Hey! This command is for bot owners only.")
-
-
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -201,8 +185,6 @@ class Events(commands.Cog, name="events"):
 
             await ctx.reply(embed=public_embed, mention_author=False)
             await channel.send(embed=embed)
-
-
 
 def setup(bot):
     bot.add_cog(Events(bot))

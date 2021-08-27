@@ -88,8 +88,6 @@ async def setstatus(self, ctx, status, type):
         
         await ctx.send(embed = setembedvar("G","Reset Status", description = description))
 
-        
-
 async def get_status_info(self,mode):
 
     guildCount = memberCount = 0
@@ -125,7 +123,6 @@ class Owner(commands.Cog, name="owner"):
         channel = self.bot.get_channel(statusChannel)
         await channel.send(embed = onlineVar)
 
-    
     @commands.command()
     @commands.is_owner()
     async def maintenance(self, ctx, status: str):
@@ -250,8 +247,6 @@ class Owner(commands.Cog, name="owner"):
         except Exception as e:
             embedVar = setembedvar("R","Unsuccessful Reload",f"{nope} Couldn't reload "+ extension+ "\n"+f"`{e}`")
             await ctx.message.channel.send(embed=embedVar)
-
-
 
 def setup(bot):
     bot.add_cog(Owner(bot))
