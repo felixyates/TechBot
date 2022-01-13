@@ -35,12 +35,9 @@ def channelCheck(self, ctx, channelID):
 
 def cancelcheck(m):
     "Checks if user desires to cancel setup."
-    print(f"Entered cancelcheck with {m.content}")
     if m.content == "cancel":
-        print("User cancelled setup.")
         return True
     else:
-        print("User continuing with setup.")
         return False
 
 def welcomeMessageCheck(m):
@@ -50,7 +47,6 @@ def welcomeMessageCheck(m):
     if authorCheck(m) == True:
         cancelled = cancelcheck(m)
         if cancelled == True:
-            print("Exited cancelcheck with True, cancelling setup.")
             return "cancel"
         else:
             return m.content
@@ -72,7 +68,6 @@ def channelIDcheck(m):
     if authorCheck(m) == True:
         cancelled = cancelcheck(m)
         if cancelled == True:
-            print("Exited cancelcheck with True, cancelling setup.")
             return "cancel"
         elif cancelled == False:
             try:
@@ -154,20 +149,16 @@ async def music_setup(self, ctx, channel):
 
     if isinstance(channel, discord.channel.TextChannel):
 
-        print("Slash.")
         servers = loadServerJson()
         server = servers[str(ctx.guild.id)]
-        print(server)
         server["music"]["enabled"] = 1
         server["music"]["channel"] = str(channel.id)
-        print(server)
         servers[str(ctx.guild.id)] = server
         updateServerJson(servers)
         await ctx.send(embed=setembedvar("G","Channel exists",f"{yep} Music module enabled and channel set to <#{channel.id}>."))
 
     else:
 
-        print("Not slash.")
         channelID = int(channel)
 
         for guild in self.bot.guilds:
@@ -279,7 +270,6 @@ async def welcome_setup(self,ctx):
         shouldContinue = hasTimedOut = cancelled = success1 = False
     
         while shouldContinue == False and hasTimedOut == False and cancelled == False:
-            print("In welcome message channel loop.")
             try:
                 msg = await self.bot.wait_for('message', timeout=30.0, check=channelIDcheck)
 
@@ -293,7 +283,6 @@ async def welcome_setup(self,ctx):
 
             except asyncio.TimeoutError:
                 hasTimedOut = True
-                print("Setup timed out")
                 await ctx.send(embed=timedOutVar)
     
             except ValueError:
@@ -301,8 +290,6 @@ async def welcome_setup(self,ctx):
 
             except ChannelDoesNotExist:
                 await ctx.send(embed=setembedvar("R","Channel does not exist",f"{nope} Make sure you entered the right channel ID.",))
-
-        print("Exited welcome message channel loop.")
 
     async def welcomeMessage():
         await ctx.send(embed=setembedvar("G","Welcome Message Setup","OK, now what's the welcome message?\nYou can use the placeholders {member} and {servername}.",).set_footer(text="Or, enter `cancel` to cancel."))
@@ -312,7 +299,6 @@ async def welcome_setup(self,ctx):
         cancelled = False
     
         while shouldContinue == False and hasTimedOut == False and cancelled == False:
-            print("In welcome message loop.")
             try:
                 msg = await self.bot.wait_for('message', timeout=60.0, check=welcomeMessageCheck)
 
@@ -326,7 +312,6 @@ async def welcome_setup(self,ctx):
             
             except asyncio.TimeoutError:
                 hasTimedOut = True
-                print("Setup timed out")
                 await ctx.send(embed=timedOutVar)
 
         return shouldContinue, success2, welcomeMessage

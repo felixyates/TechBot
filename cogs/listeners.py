@@ -2,7 +2,7 @@ import discord, json, datetime
 from discord.ext import commands
 from discord.ext.commands import CommandNotFound, MissingRequiredArgument
 from cogs.administration import Cancelled as setup_cancelled
-from modules.getjson import loadServerJson
+from modules.getjson import loadServerJson, updateServerJson, thisServerJson
 from modules.variables import botServersChannel, dmChannel, errorChannel, defaultPrefix
 from modules.embedvars import setembedvar
 from modules.emoji import nope
@@ -11,22 +11,68 @@ description = "Thank you for adding TechBot. If you run into any errors, or need
 welcomeEmbed = discord.Embed(title = "Heeeere's TechBot!", description = description)
 welcomeEmbed.set_author(name = "TechLife", icon_url = "https://www.techlifeyt.com/wp-content/uploads/2021/06/TechLife-PFP-128x.gif", url = "https://techlifeyt.com/links")
 
-async def servermessage(self, guild, type):
+class Server(object):
 
-    serversChannel = self.bot.get_channel(botServersChannel)
+    async def Add(self, guildID: str):
+        "Initialises server dictionaries for servers JSON file"
 
-    if type == "join":
+        servers = loadServerJson()
+        guild = self.bot.get_guild(guildID)
 
-        beginning = "+ Joined"
+        # initialising dictionaries
 
-    elif type == "leave":
+        server, welcome, slurdetector, music, textresponder, owner = {}, {}, {}, {}, {}, {}
 
-        beginning = "- Left"
+        # assigning default values to dictionaries
+            # 0 disables the feature
 
-    message = f"{beginning} `{guild.name}` - `{guild.member_count}` members; owned by `{guild.owner.name}` (`{guild.owner.id}`)."
-    await serversChannel.send(message)
+        welcome["enabled"] = slurdetector["enabled"] = music["enabled"] = textresponder["enabled"] = 0
+        welcome["channel"] = slurdetector["channel"] = music["channel"] = "1"
+        welcome["message"] = "Welcome to the {servername} server, {member}!"
+        owner["name"], owner["id"] = guild.owner.name, guild.owner.id
+        textresponder["triggers"] = {}
+        server["prefix"] = defaultPrefix # defined in variables module
 
-class Events(commands.Cog, name="events"):
+        # adding previous dictionaries to server dictionary
+
+        server["welcome"], server["slurdetector"], server["music"], server["textresponder"], server["owner"] = welcome, slurdetector, music, textresponder, owner
+        server["name"], server["owner"] = guild.name, owner
+
+        # adds server dictionary to servers dictionary
+
+        servers[guildID] = server
+        updateServerJson(servers)
+
+    async def Remove(self, guildID: str):
+        "Removes server from servers.json file."
+        servers = loadServerJson()
+        servers.pop(guildID)
+        updateServerJson(servers)
+
+    async def Message(self, guild, type):
+        """Sends message to channel specified in variables module.
+        Details server name, owner, and member count."""
+
+        serversChannel = self.bot.get_channel(botServersChannel)
+
+        if type == "join":
+            beginning = "+ Joined"
+        elif type == "leave":
+            beginning = "- Left"
+        elif type == "offljoin":
+            beginning = "+ While bot was offline, joined"
+        elif type == "offlleave":
+            beginning = "- While bot was offline, left"
+
+        try:
+            message = f"{beginning} `{guild.name}` - `{guild.member_count}` members; owned by `{guild.owner.name}` (`{guild.owner.id}`)."
+        except AttributeError:
+            guild = self.bot.get_guild(guild)
+            message = f"{beginning} `{guild.name}` - `unknown` members; owned by `{guild.owner.name}` (`{guild.owner.id}`)."
+
+        await serversChannel.send(message)
+
+class Listeners(commands.Cog, name="listeners"):
 
     def __init__(self, bot):
         self.bot = bot
@@ -34,7 +80,7 @@ class Events(commands.Cog, name="events"):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         
-        await servermessage(self, guild, "join")
+        await Server.Message(self, guild, "join")
         await guild.text_channels[1].send(embed = welcomeEmbed)
 
         # adapted from these comments:
@@ -44,65 +90,13 @@ class Events(commands.Cog, name="events"):
 
         # thank you ^_^
 
-        with open('servers.json', 'r') as f:
-            servers = json.load(f)
-
-        guildID = str(guild.id)
-        
-        # initialising dictionaries
-
-        server = {}
-        welcome = {}
-        slurdetector = {}
-        music = {}
-        textresponder = {}
-
-        # assigning default values to dictionaries
-            # 0 disables the feature
-
-        welcome["enabled"] = 0
-        welcome["message"] = "Welcome to the {servername} server, {member}!"
-        welcome["channel"] = "1"
-
-        slurdetector["enabled"] = 0
-        slurdetector["channel"] = "1"
-
-        music["enabled"] = 0
-        music["channel"] = "1"
-
-        textresponder["enabled"] = 0
-        textresponder["triggers"] = {}
-
-        server["prefix"] = defaultPrefix
-
-        # adding previous dictionaries to server dictionary
-
-        server["welcome"] = welcome
-        server["slurdetector"] = slurdetector
-        server["music"] = music
-        server["textresponder"] = textresponder
-
-        # adds server dictionary to servers dictionary
-
-        servers[guildID] = server
-
-        with open('servers.json', 'w') as f:
-            json.dump(servers, f, indent=4)
+        await Server.Add(self, guild)
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
 
-        await servermessage(self, guild, "leave")
-
-        with open('servers.json', 'r') as f:
-            servers = json.load(f)
-
-        guildID = str(guild.id)
- 
-        servers.pop(guildID)
-
-        with open('servers.json', 'w') as f: # deletes the guild
-            json.dump(servers, f, indent=4)
+        await Server.Message(self, guild, "leave")
+        await Server.Remove(self, guild)
 
     @commands.Cog.listener()
     async def on_member_join(self,member):
@@ -115,6 +109,28 @@ class Events(commands.Cog, name="events"):
             welcomeChannel = self.bot.get_channel(int(welcome["channel"]))
             welcomeMessage = welcome["message"].replace("{member}",member.mention).replace("{servername}",member.guild.name)
             await welcomeChannel.send(welcomeMessage)
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+
+        guilds = self.bot.fetch_guilds()
+        servers = loadServerJson()
+
+        async for guild in guilds:
+            if str(guild.id) not in servers:
+                guild = self.bot.get_guild(guild.id)
+                await Server.Add(self, guild.id)
+                await Server.Message(self, guild, "offljoin")
+
+        for server in servers:
+            inServer = False
+            async for guild in guilds:
+                if server == str(guild.id):
+                    inServer = True
+            
+            if inServer == False:
+                await Server.Remove(self, server)
+                await Server.Message(self, server, "offlleave")
 
     @commands.Cog.listener()
     async def on_message(self,message):
@@ -187,4 +203,4 @@ class Events(commands.Cog, name="events"):
             await channel.send(embed=embed)
 
 def setup(bot):
-    bot.add_cog(Events(bot))
+    bot.add_cog(Listeners(bot))

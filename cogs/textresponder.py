@@ -187,7 +187,7 @@ class TextResponder(commands.Cog, name="textresponder"):
 
     # Add responder
 
-    @cog_ext.cog_slash(name="addresponder", description="Adds the requested text responder for the server.", options=addresponder_options)
+    @cog_ext.cog_subcommand(name="add", base="textresponder", description="Adds the requested text responder for the server.", options=addresponder_options)
     @commands.has_permissions(manage_emojis=True)
     async def slash_addresponder(self, ctx, type, trigger, response):
         await addresponder(self, ctx, type, trigger, response)
@@ -199,7 +199,7 @@ class TextResponder(commands.Cog, name="textresponder"):
 
     # Remove responder
 
-    @cog_ext.cog_slash(name="removeresponder", description="Removes all responders with the given trigger")
+    @cog_ext.cog_subcommand(name="remove", base="textresponder", description="Removes all responders with the given trigger")
     @commands.has_permissions(manage_emojis=True)
     async def slash_removeresponder(self, ctx, responder: str):
         await removeresponder(self, ctx, responder)
@@ -211,7 +211,7 @@ class TextResponder(commands.Cog, name="textresponder"):
 
     # List responders
 
-    @cog_ext.cog_slash(name="responders", description="Retrieves and shows the server's text responders.")
+    @cog_ext.cog_subcommand(name="list", base="textresponder", description="Retrieves and shows the server's text responders.")
     async def slash_responders(self,ctx):
         await ctx.send(embed=listresponders(ctx))
     
@@ -221,7 +221,7 @@ class TextResponder(commands.Cog, name="textresponder"):
     
     # Turn on/off module
 
-    @cog_ext.cog_slash(name="textresponder", description="Turn text responder module on/off", options = textresponder_options)
+    @cog_ext.cog_subcommand(name="state", base="textresponder", description="Turn text responder module on/off", options = textresponder_options)
     @commands.has_permissions(administrator = True)
     async def slash_textresponder(self, ctx, state: bool):
         await textresponder(self, ctx, state)

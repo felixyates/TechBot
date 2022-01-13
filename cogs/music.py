@@ -11,8 +11,8 @@ spotifyURL2 = "https://www.open.spotify.com/"
 youtubeURL1 = "https://www.youtube.com/"
 youtubeURL2 = "https://youtube.com/"
 spDefaultPfp = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
-spotifyColour = 0x1db954
 youtubeColour = 0xe62117
+spotifyColour = 0x1db954
 
 spotify = secret("spotify")
 client_secret = spotify["private"]
@@ -26,6 +26,12 @@ class findError(Exception):
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id = spotify["public"], client_secret = spotify["private"]))
 yt = pyyoutube.Api(api_key = yt_api_key)
 
+# Slash command options
+
+songinfo_options = [{"name":"url","description":"The Spotify URL of the song.","type":3,"required":"true"}]
+
+# Classes, functions, etc.
+
 class D2C(object):
     "Converts dictionary to class"
     def __init__(self, my_dict):
@@ -35,344 +41,323 @@ class D2C(object):
 
 class Spotify(object):
 
-    async def idGetter(messageContent: str, contentType: str):
+    class Funcs(object):
 
-        id = messageContent.replace(f"{spotifyURL1}{contentType}/","")
-        id = id.replace(f"{spotifyURL2}{contentType}/","")
-        id = id.split("?")[0]
-        return id
+        async def idGetter(messageContent: str, contentType: str):
 
-    async def ArtistEmbed(id, message):
+            id = messageContent.replace(f"{spotifyURL1}{contentType}/","")
+            print(id)
+            id = id.replace(f"{spotifyURL2}{contentType}/","")
+            print(id)
+            id = id.split("?")[0]
+            return id
+    
+    class Embed(object):
 
-        artist = D2C(sp.artist(id))
-        uri = artist.uri
-        top_tracks = D2C(sp.artist_top_tracks(uri))
+        async def SetFooter(embed: discord.Embed, author: discord.User, type: str):
 
-        try:
+            embed.set_footer(text=f"{type} recommended by {author.display_name} • Data provided by Spotify.",icon_url=author.avatar_url)
+            return embed
+
+        async def Artist(id, author):
+
+            artist = D2C(sp.artist(id))
+            uri = artist.uri
+            top_tracks = D2C(sp.artist_top_tracks(uri))
+
+            try:
+                
+                artist_icon = artist.images[0]["url"]
+
+            except:
+
+                artist_icon = spDefaultPfp
+
+            # Setting up embed
+
+            if len(top_tracks.tracks) > 0:
+
+                topTrack = D2C(top_tracks.tracks[0])
+                trackName = topTrack.name
+                trackURL = topTrack.external_urls["spotify"]
+                album = topTrack.album
+                albumName = album["name"]
+                albumURL = album["external_urls"]["spotify"]
+                album_icon = album["images"][0]["url"]
+                embed = discord.Embed(title = trackName, url = trackURL, description = "Most popular song (USA)\n"+f"on [{albumName}]({albumURL})", color= spotifyColour)
+
+            else:
+
+                album_icon = ""
+                embed= discord.Embed(title="", description="Artist does not have enough plays for top songs.", color= spotifyColour)
+
+            embed.set_author(name = artist.name, url = artist.external_urls["spotify"], icon_url = artist_icon)
+            embed.set_thumbnail(url = album_icon)
+            embed.add_field(name="Followers", value= artist.followers['total'], inline=True)
+            embed.add_field(name="Artist Popularity", value=f"{artist.popularity}%", inline=True)
+            embed = await Spotify.Embed.SetFooter(embed, author, "Artist")
+            return embed
+
+        async def Playlist(id, author):
+
+            playlist = D2C(sp.playlist(id))
+
+            # Setting all variables using playlist object
+
+            description = playlist.description
+
+            try:
+                imageurl = playlist.images[0]["url"]
+            except:
+                imageurl = ""
+
+            # Cleaning up playlist description (Spotify handles characters weirdly).
+                # Need to work on this - it doesn't work.
+        
+            replaceList = [['&amp;','&'],['&#x2F;','/']]
+
+            if description.startswith('<a href='):
+                description = ""
+            else:
+                description = description.split('<a href="')
+                description = str(description[0])
+                for i in range(len(replaceList)):
+                    if replaceList[i][0] in description:
+                        description.replace(replaceList[i][0], replaceList[i][1])
+        
+            # Getting playlist owner information.
+
+            ownerID = str(playlist.owner["id"])
+
+            # Using owner object to get playlist owner URL and icon.
+
+            owner = D2C(sp.user(ownerID))
+            owner_icon = owner.images
+            try:
+                owner_icon = owner_icon[(len(owner_icon)-1)]["url"]
+            except:
+                owner_icon = spDefaultPfp
+
+            # Setting up embed
+
+            embed=discord.Embed(title= playlist.name, url= playlist.external_urls["spotify"], description=description, color=spotifyColour)
+            embed.set_author(name= playlist.owner["display_name"], url= owner.external_urls["spotify"], icon_url= owner_icon)
+            embed.set_thumbnail(url= imageurl)
+            embed.add_field(name="Tracks", value= playlist.tracks["total"], inline=True)
+            embed.add_field(name="Followers", value= playlist.followers["total"], inline=True)
+            embed = await Spotify.Embed.SetFooter(embed, author, "Playlist")
+            return embed
+
+        async def Album(id, author):
+
+            album = D2C(sp.album(id))
+
+            # Using album object to set variables.
+
+            name = album.name
+            url = album.external_urls["spotify"]
+            release_date = album.release_date
+            tracks = album.tracks["total"]
+            icon = album.images[0]["url"]
+
+            # Getting track list
+
+            trackList = []
+
+            for x in range(len(album.tracks["items"])):
+                trackList.append(album.tracks["items"][x])
             
-            artist_icon = artist.images[0]["url"]
+            # Formatting track list
 
-        except:
+            formattedTrackList = ""
 
-            artist_icon = spDefaultPfp
+            for i in range(len(trackList)):
+                if i < 5:
+                    formattedTrackList += f"{i+1}. [{trackList[i]['name']}]({trackList[i]['external_urls']['spotify']})" + "\n"
 
-        # Using message.author for footer
+            if len(trackList) > 5:
+                remainingTracks = tracks - 5
+                formattedTrackList += f"+ {remainingTracks} more songs..."
 
-        authorName = message.author.display_name
-        authorAvatar = message.author.avatar_url
+            # Getting artist information.
 
-        # Setting up embed
+            artists = album.artists
+            artistsName = []
 
-        if len(top_tracks.tracks) > 0:
+            
+            mainArtist = album.artists[0]
+            mainArtistID = mainArtist["id"]
+            mainArtistName = mainArtist["name"]
+            mainArtistURL = mainArtist["external_urls"]["spotify"]
+            mainArtistObject = sp.artist(mainArtistID)
+            
 
-            topTrack = D2C(top_tracks.tracks[0])
-            trackName = topTrack.name
-            trackURL = topTrack.external_urls["spotify"]
-            album = topTrack.album
-            albumName = album["name"]
-            albumURL = album["external_urls"]["spotify"]
-            album_icon = album["images"][0]["url"]
+            for i in range(len(artists)):
+                artistID = artists[i]["id"]
+                artistObject = D2C(sp.artist(artistID))
+                artistURL = artistObject.external_urls["spotify"]
+                tempArtist = []
+                tempArtist.append(artists[i]["name"])
+                tempArtist.append(artistURL)
+                artistsName.append(tempArtist)
+            
+            # Getting artist's icon from artist object
 
-            embed=discord.Embed(title = trackName, url = trackURL, description = "Most popular song (USA)\n"+f"From [{albumName}]({albumURL})", color=spotifyColour)
+            try:
+                mainArtist_icon = mainArtistObject["images"]
+                mainArtist_icon = mainArtist_icon[(len(mainArtist_icon)-1)]["url"]
+            except:
+                mainArtist_icon = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
 
-        else:
+            # Setting up embed
 
-            album_icon = ""
-            embed=discord.Embed(title="", description="Artist does not have enough plays for top songs.", color=spotifyColour)
+            embed = setembedvar(spotifyColour, name, url= url, author = mainArtistName, author_url = mainArtistURL, author_icon = mainArtist_icon, thumbnail = icon)
+            embed.add_field(name="Release Date", value = release_date)
+            embed.add_field(name="Tracks", value = tracks)
+            embed.add_field(name="Track List", value = formattedTrackList, inline = False)
+            embed = await Spotify.Embed.SetFooter(embed, author, "Album")
 
-        embed.set_author(name = artist.name, url = artist.external_urls["spotify"], icon_url = artist_icon)
-        embed.set_thumbnail(url = album_icon)
-        embed.add_field(name="Followers", value= artist.followers['total'], inline=True)
-        embed.add_field(name="Artist Popularity", value=f"{artist.popularity}%", inline=True)
-        embed.set_footer(text=f"Artist recommended by {authorName}",icon_url=authorAvatar)
-        return embed
+            # Handling multiple artists (if present).
 
-    async def PlaylistEmbed(id,message):
+            artistVar = ""
 
-        playlist = D2C(sp.playlist(id))
+            if len(artists) > 1:
+                for i in range(1,len(artistsName)):
+                    artistVar = artistVar + "\n"+ f"[{artistsName[i][0]}]({artistsName[i][1]})"
+                embed.add_field(name="Other Artists", value=artistVar)
 
-        # Setting all variables using playlist object
+            return embed
 
-        name = playlist.name
-        url = playlist.external_urls["spotify"]
-        trackTotal = playlist.tracks["total"]
-        followers = playlist.followers["total"]
-        description = playlist.description
+        async def User(id, author):
+            
+            user = D2C(sp.user(id))
 
-        try:
-            imageurl = playlist.images[0]["url"]
-        except:
-            imageurl = ""
+            display_name = user.display_name
+            url = user.external_urls["spotify"]
+            followers = user.followers["total"]
 
-        # Cleaning up playlist description (Spotify handles characters weirdly).
-            # Need to work on this - it doesn't work.
-    
-        replaceList = [['&amp;','&'],['&#x2F;','/']]
+            try:
+                pfp = user.images[0]["url"]
+            except:
+                pfp = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
 
-        if description.startswith('<a href='):
-            description = ""
-        else:
-            description = description.split('<a href="')
-            description = str(description[0])
-            for i in range(len(replaceList)):
-                if replaceList[i][0] in description:
-                    description.replace(replaceList[i][0], replaceList[i][1])
-    
-        # Getting playlist owner information.
+            playlists = sp.user_playlists(id, limit=5)
 
-        owner = playlist.owner
-        ownerID = str(owner["id"])
-        ownerName = owner["display_name"]
+            playlistStr = ""
+            pos = 0
+            items = playlists["items"]
+            has_playlists = False
 
-        # Using owner object to get playlist owner URL and icon.
+            if len(items) > 0:
 
-        owner = D2C(sp.user(ownerID))
-        ownerURL = owner.external_urls["spotify"]
-        owner_icon = owner.images
-        try:
-            owner_icon = owner_icon[(len(owner_icon)-1)]["url"]
-        except:
-            owner_icon = spDefaultPfp
+                has_playlists = True
 
-        # Using message.author for footer
+                for x in items:
 
-        authorName = message.author.display_name
-        authorAvatar = message.author.avatar_url
+                    pos += 1
+                    playlistStr = playlistStr + f"{pos}. [{x['name']}]({x['external_urls']['spotify']})" + "\n"
 
-        # Setting up embed
+                remaining = playlists['total'] - pos
 
-        embed=discord.Embed(title=name, url=url, description=description, color=spotifyColour)
-        embed.set_author(name=ownerName, url=ownerURL, icon_url=owner_icon)
-        embed.set_thumbnail(url=imageurl)
-        embed.add_field(name="Tracks", value=trackTotal, inline=True)
-        embed.add_field(name="Followers", value=followers, inline=True)
-        embed.set_footer(text=f"Playlist recommended by {authorName}",icon_url=authorAvatar)
+                if remaining > 0:
 
-        return embed
+                    playlistStr = playlistStr + f"+ {remaining} more"
 
-    async def AlbumEmbed(id,message):
+                firstPlaylistThumbnail = playlists["items"][0]["images"][0]["url"]
+            
+            if has_playlists == True:
 
-        album = D2C(sp.album(id))
-
-        # Using album object to set variables.
-
-        name = album.name
-        url = album.external_urls["spotify"]
-        release_date = album.release_date
-        tracks = album.tracks["total"]
-        icon = album.images[0]["url"]
-
-        # Getting track list
-
-        trackList = []
-
-        for x in range(len(album.tracks["items"])):
-            trackList.append(album.tracks["items"][x])
-        
-        # Formatting track list
-
-        formattedTrackList = ""
-
-        for i in range(len(trackList)):
-            if i < 5:
-                formattedTrackList += f"{i+1}. [{trackList[i]['name']}]({trackList[i]['external_urls']['spotify']})" + "\n"
-
-        if len(trackList) > 5:
-            remainingTracks = tracks - 5
-            formattedTrackList += f"+ {remainingTracks} more songs..."
-
-        # Getting artist information.
-
-        artists = album.artists
-        artistsName = []
-
-        
-        mainArtist = album.artists[0]
-        mainArtistID = mainArtist["id"]
-        mainArtistName = mainArtist["name"]
-        mainArtistURL = mainArtist["external_urls"]["spotify"]
-        mainArtistObject = sp.artist(mainArtistID)
-        
-
-        for i in range(len(artists)):
-            artistID = artists[i]["id"]
-            artistObject = D2C(sp.artist(artistID))
-            artistURL = artistObject.external_urls["spotify"]
-            tempArtist = []
-            tempArtist.append(artists[i]["name"])
-            tempArtist.append(artistURL)
-            artistsName.append(tempArtist)
-        
-        # Getting artist's icon from artist object
-
-        try:
-            mainArtist_icon = mainArtistObject["images"]
-            mainArtist_icon = mainArtist_icon[(len(mainArtist_icon)-1)]["url"]
-        except:
-            mainArtist_icon = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
-
-        # Using message.author for footer
-
-        authorName = message.author.display_name
-        authorAvatar = message.author.avatar_url
-
-        # Setting up embed
-
-        embed = setembedvar(spotifyColour, name, url= url, author = mainArtistName, author_url = mainArtistURL, author_icon = mainArtist_icon, thumbnail = icon)
-        embed.add_field(name="Release Date", value = release_date)
-        embed.add_field(name="Tracks", value = tracks)
-        embed.add_field(name="Track List", value = formattedTrackList, inline = False)
-        embed.set_footer(text=f"Album recommended by {authorName}", icon_url = authorAvatar)
-
-        # Handling multiple artists (if present).
-
-        artistVar = ""
-
-        if len(artists) > 1:
-            for i in range(1,len(artistsName)):
-                artistVar = artistVar + "\n"+ f"[{artistsName[i][0]}]({artistsName[i][1]})"
-            embed.add_field(name="Other Artists", value=artistVar)
-
-        return embed
-
-    async def UserEmbed(id,message):
-        
-        user = D2C(sp.user(id))
-
-        display_name = user.display_name
-        url = user.external_urls["spotify"]
-        followers = user.followers["total"]
-
-        try:
-            pfp = user.images[0]["url"]
-        except:
-            pfp = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
-
-        playlists = sp.user_playlists(id, limit=5)
-
-        playlistStr = ""
-        pos = 0
-        items = playlists["items"]
-        has_playlists = False
-
-        if len(items) > 0:
-
-            has_playlists = True
-
-            for x in items:
-
-                pos += 1
-                playlistStr = playlistStr + f"{pos}. [{x['name']}]({x['external_urls']['spotify']})" + "\n"
-
-            remaining = playlists['total'] - pos
-
-            if remaining > 0:
-
-                playlistStr = playlistStr + f"+ {remaining} more"
-
-            firstPlaylistThumbnail = playlists["items"][0]["images"][0]["url"]
-        
-        if has_playlists == True:
-
-            embed = setembedvar(spotifyColour, title="", author=display_name, author_url=url, author_icon=pfp, thumbnail = firstPlaylistThumbnail)
-            embed.add_field(name = "Followers", value = followers)
-            embed.add_field(name = "Public Playlists", value = playlistStr, inline=False)
-        
-        else:
-
-            embed = setembedvar(spotifyColour, title="", author=display_name, author_url=url, author_icon=pfp)
-            embed.add_field(name = "Followers", value = followers)
-            embed.add_field(name = "No Public Playlists", value="Make sure they're public.", inline=False)
-
-        embed.set_footer(text = f"User recommended by {message.author.name}", icon_url = message.author.avatar_url)
-
-        return embed
-
-    async def TrackEmbed(id,message):
-        
-        track = sp.track(id)
-
-        # Using track object to set variables.
-
-        name = track["name"]
-        url = track["external_urls"]["spotify"]
-        preview_url = track["preview_url"]
-
-        # Calculating track length and formatting it appropriately.
-
-        durationSecs = (track["duration_ms"]/1000)
-        durationMins = durationSecs // 60
-        remainderSecs = round(durationSecs - (durationMins*60))
-
-        if remainderSecs < 10:
-            remainderSecs = f"0{remainderSecs}"
-
-        duration = f"{int(durationMins)}:{remainderSecs}"
-
-        # Getting artist information.
-
-        artists = track["artists"]
-        artistsName = []
-
-
-        mainArtist = track["artists"][0]
-        mainArtistID = mainArtist["id"]
-        mainArtistName = mainArtist["name"]
-        mainArtistURL = mainArtist["external_urls"]["spotify"]
-        mainArtistObject = sp.artist(mainArtistID)
-        
-
-        for i in range(len(artists)):
-            artistID = artists[i]["id"]
-            artistObject = sp.artist(artistID)
-            artistURL = artistObject["external_urls"]["spotify"]
-            tempArtist = []
-            tempArtist.append(artists[i]["name"])
-            tempArtist.append(artistURL)
-            artistsName.append(tempArtist)
-        
-        # Getting artist's icon from artist object
-        
-        try:
-            mainArtist_icon = mainArtistObject["images"]
-            mainArtist_icon = mainArtist_icon[(len(mainArtist_icon)-1)]["url"]
-        except:
-            mainArtist_icon = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
-
-        # Using message.author for footer
-
-        authorName = message.author.display_name
-        authorAvatar = message.author.avatar_url
-
-        # Getting album information and cover image.
-
-        album = track["album"]
-        album_name = album["name"]
-        album_image = album["images"]
-        album_image = album_image[(len(album_image)-1)]["url"]
-
-        # Setting up embed.
-        
-        embed = setembedvar(spotifyColour, name, url=url, author=mainArtistName, author_url=mainArtistURL, author_icon=mainArtist_icon, thumbnail=album_image)
-        embed.add_field(name="Duration", value=duration, inline=True)
-        embed.add_field(name="Album", value=f"[{album_name}](https://open.spotify.com/album/{album['uri'].strip('spotify:album:')}/)", inline=True)
-
-        if preview_url is not None:
-            embed.add_field(name="Preview", value=f"[Expires after 1 day]({preview_url})", inline=True)
-
-        # Handling multiple artists (if present).
-
-        artistVar = ""
-
-        if len(artists) > 1:
-            for i in range(1,len(artistsName)):
-                artistVar = artistVar + "\n"+ f"[{artistsName[i][0]}]({artistsName[i][1]})"
-            embed.add_field(name="Other Artists", value=artistVar)
-
-        # Adding footer and returning embed.
-
-        embed.set_footer(text=f"Song recommended by {authorName}",icon_url=authorAvatar)
-        return embed
+                embed = setembedvar(spotifyColour, title="", author=display_name, author_url=url, author_icon=pfp, thumbnail = firstPlaylistThumbnail)
+                embed.add_field(name = "Followers", value = followers)
+                embed.add_field(name = "Public Playlists", value = playlistStr, inline=False)
+            
+            else:
+
+                embed = setembedvar(spotifyColour, title="", author=display_name, author_url=url, author_icon=pfp)
+                embed.add_field(name = "Followers", value = followers)
+                embed.add_field(name = "No Public Playlists", value="Make sure they're public.", inline=False)
+
+            embed = await Spotify.Embed.SetFooter(embed, author, "User")
+            return embed
+
+        async def Track(id, author):
+            
+            track = sp.track(id)
+
+            # Using track object to set variables.
+
+            name = track["name"]
+            url = track["external_urls"]["spotify"]
+            preview_url = track["preview_url"]
+
+            # Calculating track length and formatting it appropriately.
+
+            durationSecs = (track["duration_ms"]/1000)
+            durationMins = durationSecs // 60
+            remainderSecs = round(durationSecs - (durationMins*60))
+
+            if remainderSecs < 10:
+                remainderSecs = f"0{remainderSecs}"
+
+            duration = f"{int(durationMins)}:{remainderSecs}"
+
+            # Getting artist information.
+
+            artists = track["artists"]
+            artistsName = []
+
+
+            mainArtist = track["artists"][0]
+            mainArtistID = mainArtist["id"]
+            mainArtistName = mainArtist["name"]
+            mainArtistURL = mainArtist["external_urls"]["spotify"]
+            mainArtistObject = sp.artist(mainArtistID)
+            
+
+            for i in range(len(artists)):
+                artistID = artists[i]["id"]
+                artistObject = sp.artist(artistID)
+                artistURL = artistObject["external_urls"]["spotify"]
+                tempArtist = []
+                tempArtist.append(artists[i]["name"])
+                tempArtist.append(artistURL)
+                artistsName.append(tempArtist)
+            
+            # Getting artist's icon from artist object
+            
+            try:
+                mainArtist_icon = mainArtistObject["images"]
+                mainArtist_icon = mainArtist_icon[(len(mainArtist_icon)-1)]["url"]
+            except:
+                mainArtist_icon = "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
+
+            # Getting album information and cover image.
+
+            album = track["album"]
+            album_name = album["name"]
+            album_image = album["images"]
+            album_image = album_image[(len(album_image)-1)]["url"]
+
+            # Setting up embed.
+            
+            embed = setembedvar(spotifyColour, name, url=url, author=mainArtistName, author_url=mainArtistURL, author_icon=mainArtist_icon, thumbnail=album_image)
+            embed.add_field(name="Duration", value=duration, inline=True)
+            embed.add_field(name="Album", value=f"[{album_name}](https://open.spotify.com/album/{album['uri'].strip('spotify:album:')}/)", inline=True)
+
+            if preview_url is not None:
+                embed.add_field(name="Preview", value=f"[Download]({preview_url})", inline=True)
+
+            # Handling multiple artists (if present).
+
+            artistVar = ""
+
+            if len(artists) > 1:
+                for i in range(1,len(artistsName)):
+                    artistVar = artistVar + "\n"+ f"[{artistsName[i][0]}]({artistsName[i][1]})"
+                embed.add_field(name="Other Artists", value=artistVar)
+            
+            embed = await Spotify.Embed.SetFooter(embed, author, "Track")
+            return embed
 
 class YouTube(object):
 
@@ -388,20 +373,19 @@ class YouTube(object):
             thumbnail = snippet["thumbnails"]["default"]["url"]
             duration = video["items"][0]["contentDetails"]["duration"]
 
+            PT = [["H","h "],["M","m "],["S","s"]]
+
             if duration.startswith("PT") == True:
                 duration = duration.strip("PT")
-                duration = duration.replace("H","h ")
-                duration = duration.replace("M","m ")
-                duration = duration.replace("S", "s")
+                for i in PT:
+                    duration = duration.replace(i[0],i[1])
             else:
-                print(duration)
                 duration = duration.strip("P")
                 duration = duration.replace("DT","")
                 days = duration[0]
                 duration = duration[1:]
-                duration = duration.replace("H","h ")
-                duration = duration.replace("M","m ")
-                duration = duration.replace("S","s")
+                for i in PT:
+                    duration = duration.replace(i[0],i[1])
                 duration = f"{days}d {duration}"
 
             channelID = snippet["channelId"]
@@ -512,8 +496,10 @@ class Music(commands.Cog, name="music"):
     async def on_message(self,message):
 
         error = False
+        author = message.author
+        content = message.content
 
-        if message.author.bot == False and message.guild != None:
+        if author.bot == False and message.guild != None:
 
             servers = loadServerJson()
             music = servers[str(message.guild.id)]["music"]
@@ -524,41 +510,46 @@ class Music(commands.Cog, name="music"):
             
                 # Determines data source to pull info from
 
-                if message.content.startswith(spotifyURL1) or message.content.startswith(spotifyURL2):
+                if content.startswith(spotifyURL1) or content.startswith(spotifyURL2):
                     source = "open.spotify.com/"
 
-                    if f"{source}playlist/" in message.content:
+                    types = ["playlist","track","artist","album","user"]
 
-                        id = await Spotify.idGetter(message.content, "playlist")
-                        botMsg = await message.channel.send(embed= await Spotify.PlaylistEmbed(id,message))
+                    for type in types:
 
-                    elif f"{source}track/" in message.content:
+                        if f"{source}{type}/" in content:
 
-                        id = await Spotify.idGetter(message.content, "track")
-                        botMsg = await message.channel.send(embed = await Spotify.TrackEmbed(id,message))
-
-                    elif f"{source}artist/" in message.content:
-
-                        id = await Spotify.idGetter(message.content, "artist")
-                        botMsg = await message.channel.send(embed = await Spotify.ArtistEmbed(id,message))
-
-                    elif f"{source}album/" in message.content:
-
-                        id = await Spotify.idGetter(message.content, "album")
-                        botMsg = await message.channel.send(embed = await Spotify.AlbumEmbed(id,message))
+                            id = await Spotify.Funcs.idGetter(content, type)
+                            type = type
+                            break
                     
-                    elif f"{source}user/" in message.content:
+                    if type == "playlist":
 
-                        id = await Spotify.idGetter(message.content, "user")
-                        botMsg = await message.channel.send(embed = await Spotify.UserEmbed(id,message))
+                        botMsg = await message.channel.send(embed= await Spotify.Embed.Playlist(id, author))
 
-                elif message.content.startswith(youtubeURL1) or message.content.startswith(youtubeURL2):
+                    elif type == "track":
+
+                        botMsg = await message.channel.send(embed = await Spotify.Embed.Track(id, author))
+
+                    elif type == "artist":
+
+                        botMsg = await message.channel.send(embed = await Spotify.Embed.Artist(id, author))
+
+                    elif type == "album":
+
+                        botMsg = await message.channel.send(embed = await Spotify.Embed.Album(id, author))
+                    
+                    elif type == "user":
+
+                        botMsg = await message.channel.send(embed = await Spotify.Embed.User(id, author))
+
+                elif content.startswith(youtubeURL1) or content.startswith(youtubeURL2):
                     source = "youtube.com/"
 
-                    if f"{source}playlist?list=" in message.content:
+                    if f"{source}playlist?list=" in content:
 
-                        playlist_id = message.content.replace("https://www.youtube.com/playlist?list=","")
-                        video_id = message.content.replace("https://youtube.com/playlist?list=","")
+                        playlist_id = content.replace("https://www.youtube.com/playlist?list=","")
+                        video_id = content.replace("https://youtube.com/playlist?list=","")
 
                         try:
 
@@ -570,9 +561,9 @@ class Music(commands.Cog, name="music"):
                             errorType = "playlist"
                             error_url = f"https://www.youtube.com/playlist?list={playlist_id}"
 
-                    elif f"{source}watch?v=" in message.content:
+                    elif f"{source}watch?v=" in content:
 
-                        video_id = message.content.split("&")[0]
+                        video_id = content.split("&")[0]
                         video_id = video_id.split("youtube.com/watch?v=")[1]
 
                         try:
@@ -585,9 +576,9 @@ class Music(commands.Cog, name="music"):
                             errorType = "video"
                             error_url = f"https://www.youtube.com/watch?v={video_id}"
                     
-                    elif f"{source}channel/" in message.content:
+                    elif f"{source}channel/" in content:
 
-                        channel_id = message.content.split("youtube.com/channel/")[1]
+                        channel_id = content.split("youtube.com/channel/")[1]
                         try:
                             embed = await YouTube.ChannelEmbed(channel_id, message)
                         except findError:
@@ -616,14 +607,12 @@ class Music(commands.Cog, name="music"):
 
                 if source != None:
 
-                    await asyncio.sleep(0.5)
                     await message.delete()
 
                     if source != "unsupported" and botMsg != None:
                         await botMsg.add_reaction(upvote)
                         await botMsg.add_reaction(downvote)
 
-    songinfo_options = [{"name":"url","description":"The Spotify URL of the song.","type":3,"required":"true"}]
     @cog_ext.cog_slash(name="songinfo", description="Gives info about a Spotify song.", options=songinfo_options)
     async def slash_songinfo(self, ctx, url):
 
@@ -634,7 +623,6 @@ class Music(commands.Cog, name="music"):
             id = id.split("?")[0]
 
             track = sp.track(id)
-            print(track)
             tr_adv = sp.audio_features(id)[0]
 
             name = track["name"]

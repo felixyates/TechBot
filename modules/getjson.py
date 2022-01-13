@@ -1,46 +1,35 @@
 import json, discord
 from discord.ext import commands
-from modules.variables import defaultPrefix
+
+path = 'servers.json'
 
 def loadServerJson():
-
-    with open('servers.json', 'r') as f:
-        
+    "Loads the `servers.json` file."
+    with open(path, 'r') as f:
         servers = json.load(f)
-
     return servers
 
 def updateServerJson(servers):
-    
-    with open('servers.json', 'w') as f:
-
+    "Updates the `servers.json` file."
+    with open(path, 'w') as f:
         json.dump(servers, f, indent=4)
 
+def thisServerJson(guildID):
+    "Loads the specified server's JSON data from the `servers.json` file."
+    with open(path, 'r') as f:
+        servers = json.load(f)
+        server = servers[str(guildID)]
+        return server
+
 def secret(fetch):
-
-    with open("secrets.json", "r") as f:
-
+    """Fetches a secret from the `secrets.json` file
+    e.g. Discord, Spotify, YouTube API keys."""
+    with open('secrets.json', "r") as f:
         secrets = json.load(f)
         return secrets[fetch]
 
 def get_prefix(bot, message):
-
-    try:
-
-        with open("servers.json", "r") as f:
-
-            servers = json.load(f)
-
-        return commands.when_mentioned_or(servers[str(message.guild.id)]["prefix"])(bot, message)
-    
-    except:
-
-        return commands.when_mentioned_or(defaultPrefix)(bot, message)
-
-def thisServerJson(guildID):
-
-    with open('servers.json', 'r') as f:
-
+    "Loads the bot prefix from the `servers.json` file."
+    with open(path, "r") as f:
         servers = json.load(f)
-        server = servers[str(guildID)]
-        return server
+    return commands.when_mentioned_or(servers[str(message.guild.id)]["prefix"])(bot, message)

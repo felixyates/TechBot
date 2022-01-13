@@ -27,7 +27,6 @@ async def ban(self, ctx, member: discord.User, *, reason= ""):
     embed = discord.Embed(color = 0x00ff00, title = f"Banned {member.name}", description = f"Successfully banned {member.mention}.", timestamp = datetime.datetime.now())
 
     if reason != "":
-        print(reason)
         reason = ctx.message.content.strip(member.mention)
         embed.add_field(name = "Reason", value = reason)
     else:
@@ -92,7 +91,7 @@ async def slowdelete(self, ctx, messages: int):
 # Slash command choices and options
 
 kick_options = [{"name":"user","description":"User to kick","type":6,"required":"true"},{"name":"reason","description":"Reason for kicking user","type":3,"required":"false"}]
-ban_options = [{"name":"user","description":"User to ban","type":6,"required":"true"}]
+ban_options = [{"name":"user","description":"User to ban","type":6,"required":"true"},{"name":"reason","description":"Reason for ban","type":3,"required":"false"}]
 delete_options = [{"name":"messages","description":"Number of messages to delete","type":4,"required":"true"}]
 slowdelete_options = [{"name":"messages","description":"Number of messages to delete","type":4,"required":"true"}]
 
@@ -103,7 +102,7 @@ class Moderation(commands.Cog, name="moderation"):
 
     # Kick
 
-    @cog_ext.cog_slash(name="kick", description="Simple kick command")
+    @cog_ext.cog_slash(name="kick", description="Simple kick command", options=kick_options)
     @has_permissions(kick_members=True)
     async def slash_kick(self, ctx, member, reason):
         await kick(self, ctx, member, reason)

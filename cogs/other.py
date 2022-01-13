@@ -17,16 +17,6 @@ def get_prefix(bot, message):
 
 # Command functions
 
-async def hello(self, ctx):
-    await ctx.reply("world", mention_author=False)
-
-async def add(self, ctx, a, b):
-    total = a + b
-    if int(total) == total:
-        await ctx.send(str(int(total)))
-    else:
-        await ctx.send(a + b)
-
 async def ping(self, ctx):
     await ctx.reply(f"🏓 Pong! TechBot's ping to Discord is **{round(self.bot.latency *1000)}** ms!", mention_author=False)
 
@@ -44,7 +34,6 @@ async def help(self,ctx):
 
 async def serverinfo(self, ctx, serverid):
 
-    await ctx.send(f"{loading}  Gathering server info, please be patient...")
     found = False
 
     if serverid == 0:
@@ -114,7 +103,6 @@ async def serverinfo(self, ctx, serverid):
 # Slash command choices and options
 
 add_options = [{"name":"a","description":"The first number.","type":4,"required":"true"},{"name":"b","description":"The second number.","type":4,"required":"true"}]
-#serverinfo_options = [{"name":"serverid","description":"The ID of the server to provide information about.","type":4,"required":"false"}]
 
 class Other(commands.Cog, name="other"):
     def __init__(self, bot):
@@ -125,26 +113,6 @@ class Other(commands.Cog, name="other"):
         if self.bot.user.mentioned_in(message) and message.author.bot == False and message.content[3:] == self.bot.user.mention[2:]:
             prefix = get_prefix(self, message)
             await message.reply(f"Hey, {message.author.mention}! My prefix for this server is `{prefix}`. Run `{prefix}help` for, you guessed it, help :)")
-
-    # Hello
-
-    @cog_ext.cog_slash(name="hello", description="Says 'world'")
-    async def slash_hello(self, ctx):
-        await hello(self, ctx)
-
-    @commands.command(name="hello")
-    async def regular_hello(self, ctx):
-        await hello(self, ctx)
-
-    # Add
-
-    @cog_ext.cog_slash(name="add", description="Adds two numbers together.", options=add_options)
-    async def slash_add(self, ctx, a: float, b: float):
-        await add(self, ctx, a, b)
-
-    @commands.command(name="add")
-    async def regular_add(self, ctx, a: float, b: float):
-        await add(self, ctx, a, b)
 
     # Ping
 
