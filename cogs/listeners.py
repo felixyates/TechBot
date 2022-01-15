@@ -128,9 +128,9 @@ class Listeners(commands.Cog, name="listeners"):
                 if server == str(guild.id):
                     inServer = True
             
-            if inServer == False:
+            """if inServer == False:
                 await Server.Remove(self, server)
-                await Server.Message(self, server, "offlleave")
+                await Server.Message(self, server, "offlleave")"""
 
     @commands.Cog.listener()
     async def on_message(self,message):
