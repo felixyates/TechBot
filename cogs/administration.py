@@ -1,470 +1,155 @@
-import discord, asyncio, discord_slash
+import discord
 from discord.ext import commands
-from discord.ext.commands import has_permissions
-from modules.embedvars import setembedvar
-from modules.emoji import yep, nope
-from modules.getjson import loadServerJson, updateServerJson
-from discord_slash import cog_ext
+from discord.commands import SlashCommand, SlashCommandGroup, ApplicationContext
+from modules import embs, srv
+from cogs import music
 
-# Errors
-
-class ChannelDoesNotExist(Exception):
-    pass
-
-class Cancelled(Exception):
-    pass
-
-# Check functions
-
-def channelCheck(self, ctx, channelID):
-
-    channelExists = False
-
-    try:
-        channelID = int(channelID)
-    except ValueError:
-        raise ValueError
-
-    for guild in self.bot.guilds:
-        if guild.id == ctx.guild.id:
-            for channel in guild.text_channels:
-                if channel.id == channelID:
-                    channelExists = True
-    
-    return channelExists
-
-def cancelcheck(m):
-    "Checks if user desires to cancel setup."
-    if m.content == "cancel":
-        return True
+async def set_module_channel(ctx, module_name: str, channel: discord.TextChannel):
+    module: srv.Server.Module = await srv.Server(ctx.guild.id).GetModule(module_name)
+    callback = await module.SetChannel(channel)
+    if callback["successful"]:
+        await ctx.respond(embed = embs.Success(f"Channel set to {channel.mention}"))
     else:
-        return False
+        await ctx.respond(embed = callback["embed"])
 
-def welcomeMessageCheck(m):
-    """Checks if message is:
-        a) from command issuer, or
-        b) requesting cancellation"""
-    if authorCheck(m) == True:
-        cancelled = cancelcheck(m)
-        if cancelled == True:
-            return "cancel"
+async def set_module_status(ctx, module_name: str, state: int):
+    server = srv.Server(ctx.guild.id)
+    module: srv.Server.Module = await server.GetModule(module_name)
+
+    if state == 1:
+        if hasattr(module, "channel") and module.channel is not None:
+                callback = await module.Enable()
+                embed = callback["embed"]
         else:
-            return m.content
+            embed = embs.Failure("Set up the module first")
     else:
-        print("Message not from command issuer.")
-        
-def authorCheck(m):
-    "Checks if message is from command issuer."
-    if m.author.id == author.id:
-        return True
-    else:
-        return False
+        callback = await module.Disable()
+        embed = callback["embed"]
 
-def channelIDcheck(m):
-    """Checks if message is:
-        a) from command issuer,
-        b) requesting cancellation, or
-        c) an integer"""
-    if authorCheck(m) == True:
-        cancelled = cancelcheck(m)
-        if cancelled == True:
-            return "cancel"
-        elif cancelled == False:
-            try:
-                return int(m.content)
-            except:
-                raise ValueError
-    else:
-        print("Message not from command issuer.")
+    await ctx.respond(embed = embed)
 
-# Command functions
+class WelcomeModal(discord.ui.Modal):
+    def __init__(self, title, *args, **kwargs) -> None:
+        super().__init__(title, *args)
+        self.channel = kwargs.get("channel")
+        self.add_item(discord.ui.InputText(
+            label = "Message to send when a member joins",
+            placeholder = "You can use the placeholders {member} and {servername} in your message",
+            style = discord.InputTextStyle.long
+        )
+    )
 
-async def set_prefix(ctx, prefix):
+    async def callback(self, interaction: discord.Interaction):
+        shouldSet = False
+        while not shouldSet:
+            message = self.children[0].value
+            tempMessage = message.replace("{member}", interaction.user.mention)
+            tempMessage = message.replace("{servername}", interaction.guild.name)
+            view = WelcomeView()
+            await interaction.response.send_message(
+                f"""This is what the welcome message will look like:
+                {tempMessage}""",
+                view = view
+            )
 
-    # adapted from this comment: https://stackoverflow.com/a/64513681/14577385
-    # thank you :)
+class WelcomeView(discord.ui.View):
+    def __init__(self, **kwargs):
+        self.channel = kwargs.get("channel")
 
-    servers = loadServerJson()
-
-    servers[str(ctx.guild.id)]["prefix"] = prefix
-    updateServerJson(servers)
-    embed = setembedvar("G","Prefix changed",f"{yep} Successfully changed prefix to: {prefix}")
-
-    if isinstance(ctx, discord_slash.context.SlashContext):
-
-        await ctx.send(embed = embed)
-
-    else:
-
-        await ctx.reply(embed = embed, mention_author=False)
+    @discord.ui.button(label = 'Confirm and enable', style = discord.ButtonStyle.success)
+    async def confirm_callback(self, interaction, button):
+        button.disabled = True
+        await interaction.response.edit_message(view=self)
     
-    await ctx.message.guild.me.edit(nick=f"[{prefix}] TechBot")
-
-async def music_status(ctx, state):
-
-    servers = loadServerJson()
-    server = servers[str(ctx.guild.id)]
-
-    if server["music"]["channel"] != "1":
-
-        if state == "on" or state == "off":
-            
-            if state == "on":
-
-                state = 1
-                message = "enabled"
-
-            elif state == "off":
-
-                state = 0
-                message = "disabled"
-
-            if isinstance(ctx, discord_slash.context.SlashContext):
-
-                await ctx.send(embed = setembedvar("G",f"Music {message}",f"{yep} Successfully {message} music module."))
-            
-            else:
-
-                await ctx.reply(embed = setembedvar("G",f"Music {message}",f"{yep} Successfully {message} music module."), mention_author=False)
-
-
-            servers[str(ctx.guild.id)]["music"]["enabled"] = state
-            updateServerJson(servers)
-
-        else:
-
-            await ctx.reply(embed = setembedvar("R","Incorrect Syntax",f"{nope} Enter `on` or `off`."), mention_author=False)
-    
-    else:
-
-        await ctx.send(embed = setembedvar("R","Music Channel Unset",f"{nope} Set up the music module first ({server['prefix']}musicsetup <channel-id>)"))
-
-async def music_setup(self, ctx, channel):
-
-    """Allows guild admins to use the music module in their own server.
-    Syntax: >musicsetup <music-channel-id>"""
-
-    channelExists = False
-    shouldContinue = True
-
-    if isinstance(channel, discord.channel.TextChannel):
-
-        servers = loadServerJson()
-        server = servers[str(ctx.guild.id)]
-        server["music"]["enabled"] = 1
-        server["music"]["channel"] = str(channel.id)
-        servers[str(ctx.guild.id)] = server
-        updateServerJson(servers)
-        await ctx.send(embed=setembedvar("G","Channel exists",f"{yep} Music module enabled and channel set to <#{channel.id}>."))
-
-    else:
-
-        channelID = int(channel)
-
-        for guild in self.bot.guilds:
-            if guild.id == ctx.guild.id:
-                for channel in guild.text_channels:
-                    if channel.id == channelID:
-                        channelExists = True
-                        await ctx.reply(embed=setembedvar("G","Channel exists",f"{yep} Music module enabled and channel set to <#{channelID}>."), mention_author=False)
-                        
-                        servers = loadServerJson()
-                        server = servers[str(guild.id)]
-                        server["music"]["enabled"] = 1
-                        server["music"]["channel"] = str(channelID)
-                        servers[str(guild.id)] = server
-                        updateServerJson(servers)
-
-        if channelExists == False and shouldContinue == True:
-            await ctx.reply(embed=setembedvar("R","Channel does not exist",f"{nope} Make sure you entered the right channel ID."), mention_author=False)
-
-async def welcome_status(self, ctx, state):
-
-    servers = loadServerJson()
-    server = servers[str(ctx.guild.id)]
-
-    if server["welcome"]["channel"] != "1":
-
-        if state == "on" or state == "off":
-            
-            if state == "on":
-
-                state = 1
-                message = "enabled"
-
-            elif state == "off":
-
-                state = 0
-                message = "disabled"
-
-            embed = setembedvar("G",f"Welcome module {message}",f"{yep} Successfully {message} welcome module.")
-
-            if isinstance(ctx, discord_slash.context.SlashContext):
-
-                await ctx.send(embed = embed)
-
-            else:
-
-                await ctx.reply(embed = embed, mention_author=False)
-
-            servers[str(ctx.guild.id)]["welcome"]["enabled"] = state
-            updateServerJson(servers)
-
-        else:
-
-            await ctx.send(embed = setembedvar("R","Incorrect Syntax",f"{nope} Enter 'on' or 'off'."))
-    
-    else:
-
-        await ctx.send(embed = setembedvar("R","Welcome Channel Unset",f"{nope} Set up the welcome module first"+"\n"+f"({server['prefix']}welcomesetup)"))
-
-async def welcome_setup(self,ctx):
-
-    """Allows for guild admins to create / set a custom welcome message for their server.
-    Placeholders for message: `{member}` and `{servername}`
-    Syntax: `>welcomesetup`"""
-
-    global author
-    author = ctx.author
-    success1 = success2 = False
-
-    prefix= loadServerJson()[str(ctx.guild.id)]["prefix"]
-
-    timedOutVar = setembedvar("R","Setup Expired",f"{nope} Didn't receive response. Run `{prefix}welcomesetup` to restart setup.",False)
-
-    cancelledMsg = f"""Cancelled welcome message setup.
-                    You can always run {prefix}welcomesetup to start again."""
-    cancelledVar = setembedvar("R","Cancelled Setup",cancelledMsg,False)
-
-    embedOneMsg = """What's the ID of the channel you'd like the welcome message to be sent to?
-
-    Hint: you can get this by enabling *Developer Mode* in Discord's advanced settings, then right-clicking on the channel and 'Copy ID'."""
-
-    embedOne = setembedvar("G","Welcome Message Setup",embedOneMsg,False)
-    embedOne.set_footer(text="Or, enter `cancel` to cancel.")
-    await ctx.send(embed=embedOne)
-
-    async def doesChannelExist(channelID):
-        "Checks to see if channel exists in guild."
-
-        channelExists = False
-
-        for guild in self.bot.guilds:
-            if guild.id == ctx.guild.id:
-                for channel in guild.text_channels:
-                    if channel.id == channelID:
-                        channelExists = True
-                        await ctx.send(embed=setembedvar("G","Channel exists",f"{yep} Channel set to <#{channelID}>.",False))
-                        shouldContinue = True
-                        success1 = True
-                        return shouldContinue, success1, channelID
-
-        if channelExists == False:
-            raise ChannelDoesNotExist(f"Channel {channelID} not found.")
-
-    async def welcomeChannel():
-
-        """Prompts user to give channel ID and waits for response or until timeout.
-        Then checks message and to see if channel exists. Keeps waiting if user enters wrong format message or wrong channel ID."""
-
-        shouldContinue = hasTimedOut = cancelled = success1 = False
-    
-        while shouldContinue == False and hasTimedOut == False and cancelled == False:
-            try:
-                msg = await self.bot.wait_for('message', timeout=30.0, check=channelIDcheck)
-
-                if msg.content == "cancel":
-                    cancelled = True
-                    await ctx.send(embed=cancelledVar)
-                    raise Cancelled
-                else:
-                    shouldContinue, success1, welcomeChannel = await doesChannelExist(int(msg.content))
-                    return shouldContinue, success1, welcomeChannel
-
-            except asyncio.TimeoutError:
-                hasTimedOut = True
-                await ctx.send(embed=timedOutVar)
-    
-            except ValueError:
-                await ctx.send(embed=setembedvar("R","Incorrect Message Type",f"{nope} Make sure you entered a channel ID, which should be an integer.",))
-
-            except ChannelDoesNotExist:
-                await ctx.send(embed=setembedvar("R","Channel does not exist",f"{nope} Make sure you entered the right channel ID.",))
-
-    async def welcomeMessage():
-        await ctx.send(embed=setembedvar("G","Welcome Message Setup","OK, now what's the welcome message?\nYou can use the placeholders {member} and {servername}.",).set_footer(text="Or, enter `cancel` to cancel."))
-
-        shouldContinue = False
-        hasTimedOut = False
-        cancelled = False
-    
-        while shouldContinue == False and hasTimedOut == False and cancelled == False:
-            try:
-                msg = await self.bot.wait_for('message', timeout=60.0, check=welcomeMessageCheck)
-
-                if msg.content == "cancel":
-                    cancelled = True
-                    await ctx.send(embed=cancelledVar)
-                else:
-                    welcomeMessage = msg.content
-                    success2 = True
-                    shouldContinue = True
-            
-            except asyncio.TimeoutError:
-                hasTimedOut = True
-                await ctx.send(embed=timedOutVar)
-
-        return shouldContinue, success2, welcomeMessage
-
-    shouldContinue = success1 = success2 = False
-
-    while success1 == False and shouldContinue == False:
-        shouldContinue, success1, welcomeChannel = await welcomeChannel()
-    shouldContinue = False
-    while success2 == False and shouldContinue == False:
-        shouldContinue, success2, welcomeMessage = await welcomeMessage()
-    member = author.mention
-    servername = ctx.guild.name
-    prefix= loadServerJson()[str(ctx.guild.id)]["prefix"]
-    await ctx.send(embed=setembedvar("G","Setup Complete",f"{yep} All done! Below you can see a preview of your welcome message."+"\n"+f"If you want to change anything, simply re-run the command ({prefix}welcomesetup).",False))
-    tempwelcomeMessage = welcomeMessage.replace("{member}",member).replace("{servername}",servername)
-    await ctx.send(str(tempwelcomeMessage))
-
-    guildid = ctx.guild.id
-
-    servers = loadServerJson()
-    server = servers[str(guildid)]
-    server["welcome"]["enabled"] = 1
-    server["welcome"]["channel"] = str(welcomeChannel)
-    server["welcome"]["message"] = welcomeMessage
-    servers[str(guildid)] = server
-    updateServerJson(servers)
-
-async def slurdetector_status(self, ctx, state):
-
-    servers = loadServerJson()
-    server = servers[str(ctx.guild.id)]
-
-    if server["slurdetector"]["channel"] != "1":
-
-        if state == "on" or state == "off":
-            
-            if state == "on":
-
-                state = 1
-                await ctx.send(embed = setembedvar("G","Slur Detector Enabled",f"{yep} Successfully enabled slur detector module."))
-
-            elif state == "off":
-
-                state = 0
-                await ctx.send(embed = setembedvar("G","Slur Detector Disabled",f"{yep} Successfully disabled slur detector module."))
-
-            servers[str(ctx.guild.id)]["slurdetector"]["enabled"] = state
-            updateServerJson(servers)
-
-        else:
-
-            await ctx.send(embed = setembedvar("R","Incorrect Syntax",f"{nope} Enter 'on' or 'off'."))
-    
-    else:
-
-        await ctx.send(embed = setembedvar("R","Slur Detector Moderation Channel Unset",f"{nope} Set up the slur detector module first"+"\n"+f"({server['prefix']}slurdetectorsetup <channel-id>)"))
-
-async def slurdetector_setup(self, ctx, channelID):
-
-    """Allows guild admins to use the slur detector module in their own server.
-    Syntax: >slurdetectorsetup <moderator-channel-id>"""
-
-    try:
-
-        channelExists = channelCheck(self, ctx, channelID)
-
-        servers = loadServerJson()
-        server = servers[str(ctx.guild.id)]
-        server["slurdetector"]["enabled"] = 1
-        server["slurdetector"]["channel"] = str(channelID)
-        servers[str(ctx.guild.id)] = server
-        updateServerJson(servers)
-
-        if channelExists == True:
-            await ctx.send(embed=setembedvar("G","Channel exists",f"{yep} Slur detector enabled and moderation channel set to <#{channelID}>."))
-
-    except ValueError:
-        await ctx.send(embed=setembedvar("R","Incorrect Message Type",f"{nope} Make sure you entered a channel ID, which should be an integer."))
-        shouldContinue = False
-
-    if channelExists == False and shouldContinue == True:
-        await ctx.send(embed=setembedvar("R","Channel does not exist",f"{nope} Make sure you entered the right channel ID."))
+    @discord.ui.button(label = 'Reconfigure', style = discord.ButtonStyle.danger)
+    async def reconfigure_callback(self, interaction, button):
+        button.disabled = True
+        modal = WelcomeModal(title = "Welcome message setup", channel = self.channel)
+        await interaction.response.send_modal(modal)
 
 # Slash command choices and options
+state_choices = [discord.OptionChoice(name = 'On', value = 1), discord.OptionChoice(name = 'Off', value = 0)]
+state_options = discord.Option(int, description = "Whether the module is on or off", choices = state_choices)
+channel_options = discord.Option(discord.TextChannel, description = "The channel for the module to be active in")
 
-state_choices = [{"name":"On","value":"on"},{"name":"Off","value":"off"}]
-state_options = [{"name":"state","description":"Whether the module is on or off.","type":3,"choices":state_choices,"required":"true"}]
-musicsetup_options = [{"name":"channel","description":"The channel for the module to be active in.","type":7,"required":"true"}]
-slurdetectorsetup_options = [{"name":"channel","description":"The channel for the module to be active in.","type":7,"required":"true"}]
-
-class Administration(commands.Cog, name="administration"):
-
+class Administration(commands.Cog, name = 'administration'):
     def __init__(self, bot):
         self.bot = bot
     
-    # Set prefix
+    modules = SlashCommandGroup(
+        name = 'module',
+        description = "Commands to control the bot's modules in the server"
+    )
 
-    @cog_ext.cog_slash(name="setprefix", description="Sets the bot's prefix.")
-    @commands.has_permissions(administrator = True)
-    async def slash_set_prefix(self, ctx, prefix):
-        await set_prefix(ctx, prefix)
+    music = modules.create_subgroup(
+        name = "music",
+        description = "Commands related to the music module"
+    )
 
-    @commands.command(name="setprefix")
-    @commands.has_permissions(administrator = True)
-    async def regular_set_prefix(self, ctx, prefix):
-        await set_prefix(ctx, prefix)
+    @music.command(name = "status", description = "Turns the music module on/off")
+    @discord.default_permissions(administrator = True)
+    async def music_status(self, ctx, state: state_options):
+        await set_module_status(ctx, module_name = "music", state=state)
+        await music.updateCache(self, ctx.guild.id)
 
-    # Music module
+    @music.command(name="channel", description="Sets the server's music channel")
+    @discord.default_permissions(administrator = True)
+    async def music_channel(self, ctx, channel: channel_options):
+        await set_module_channel(ctx, module_name="music", channel=channel)
 
-    @cog_ext.cog_subcommand(name="status", base="music", description="Turns the music module on/off.", options=state_options)
-    @commands.has_permissions(administrator = True)
-    async def slash_music_status(self, ctx, state):
-        await music_status(ctx, state)
+    welcome = modules.create_subgroup(
+        name = "welcome",
+        description = "Commands related to the welcome module"
+    )
 
-    @commands.command(name="music")
-    @commands.has_permissions(administrator = True)
-    async def regular_music_status(self, ctx, state):
-        await music_status(ctx, state)
+    @welcome.command(name="setup", description="Sets up the server's welcome module")
+    @discord.default_permissions(administrator = True)
+    async def welcome_setup(self, ctx,
+        channel: discord.Option(discord.TextChannel, "The channel to send the welcome message in")
+    ):
+        modal = WelcomeModal(title = "Welcome message setup", channel = channel)
+        await ctx.send_modal(modal)
 
-    @cog_ext.cog_subcommand(name="setup", base="music", description="Sets the server's music channel.", options=musicsetup_options)
-    @commands.has_permissions(administrator = True)
-    async def slash_music_setup(self, ctx, channel):
-        await music_setup(self, ctx, channel)
+    @welcome.command(name="status", description="Turns the welcome message on/off")
+    @discord.default_permissions(administrator = True)
+    async def welcome_status(self, ctx: ApplicationContext, state: state_options):
+        await set_module_status(ctx, "welcome", state)
 
-    @commands.command(name="musicsetup")
-    @commands.has_permissions(administrator = True)
-    async def regular_music_setup(self, ctx, channel):
-        await music_setup(self, ctx, channel)
+    slur_detector = modules.create_subgroup(
+        name = "slurdetector",
+        description = "Commands related to the slur detector module",
+    )
 
-    # Welcome module
+    @slur_detector.command(name="status", description="Turns the slur detector on/off")
+    @discord.default_permissions(administrator = True)
+    async def slurdetector_status(self, ctx: ApplicationContext, state: state_options):
+        await set_module_status(ctx, "slurdetector", state)
 
-    @cog_ext.cog_subcommand(name="setup", base="welcome", description="Sets the server's welcome channel.")
-    @commands.has_permissions(administrator=True)
-    async def slash_welcome_setup(self, ctx):
-        await welcome_setup(self, ctx)
+    @slur_detector.command(name="setup", description="Sets the slur detector moderation channel")
+    @discord.default_permissions(administrator = True)
+    async def slurdetector_setup(self, ctx: ApplicationContext, channel: channel_options):
+        """Allows guild admins to use the slur detector module in their own server."""
+        await set_module_channel(ctx, channel)
+    
+    textresponder_choices = [discord.OptionChoice("Enabled", 1), discord.OptionChoice("Disabled", 0)]
 
-    @cog_ext.cog_subcommand(name="status", base="welcome", description="Turns the welcome message on/off.", options=state_options)
-    @commands.has_permissions(administrator = True)
-    async def slash_welcome_status(self, ctx, state):
-        await welcome_status(self, ctx, state)
+    text_responder = modules.create_subgroup(
+        name = "textresponder",
+        description = "Commands related to the text responder module"
+    )
 
-    # Slur detector module
+    @text_responder.command(name="state", base="textresponder", description="Turn text responder module on/off")
+    @discord.default_permissions(administrator = True)
+    async def textresponder(self, ctx,
+        state: state_options
+    ):        
+        module = await srv.Server(ctx.guild.id).Module().Get('textresponder')
 
-    @cog_ext.cog_subcommand(name="status", base="slurdetector", description="Turns the slur detector on/off.", options=state_options)
-    @commands.has_permissions(administrator = True)
-    async def slash_slurdetector_status(self, ctx, state):
-        await slurdetector_status(self, ctx, state)
-
-    @cog_ext.cog_subcommand(name="setup", base="slurdetector", description="Sets the slur detector moderation channel.", options=slurdetectorsetup_options)
-    @commands.has_permissions(administrator = True)
-    async def slash_slurdetector_setup(self, ctx, channel):
-        await slurdetector_setup(self, ctx, channel.id)
+        if state == 1:
+            callback = await module.Enable()
+        elif state == 0:
+            callback = await module.Disable()
+        await ctx.respond(embed = callback["embed"])
 
 def setup(bot):
     bot.add_cog(Administration(bot))

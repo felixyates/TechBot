@@ -1,15 +1,10 @@
 import discord, os
 from discord.ext import commands
-from modules.getjson import secret, get_prefix
-from discord_slash import SlashCommand
+from modules import getjson
 
-TOKEN = secret("discord")
-
+TOKEN = getjson.secret("discord")
 intents = discord.Intents().all()
-intents.members = True
-intents.guilds = True
-bot = commands.Bot(command_prefix=get_prefix, intents = intents)
-slash = SlashCommand(bot, sync_commands=True, sync_on_cog_reload=True)
+bot = commands.Bot(intents = intents)
 
 bot.remove_command("help")
 

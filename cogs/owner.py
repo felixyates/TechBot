@@ -1,252 +1,194 @@
-import discord
+import discord, os
 from discord.ext import commands
 from discord.ext.tasks import loop
+from discord.commands import SlashCommandGroup, slash_command
 from asyncio import sleep
-from modules.embedvars import setembedvar
-from modules.emoji import dnd, online, offline, yep, nope, loading, wave_animated
-from modules.getjson import loadServerJson
-from modules.variables import statusChannel
+from modules import embs, emoji, getjson, vars, db, srv
 
-onlineVar = setembedvar("G",f"{online} Online",f"TechBot is back online and reporting for duty!")
 maintenanceStatus = 0
 
-@loop(seconds=60)
-async def status_update(self):
+class EchoModal(discord.ui.Modal):
+    def __init__(self, title, *args, **kwargs) -> None:
+        super().__init__(title, *args)
 
-    delay = 60 # seconds
+        self.add_item(discord.ui.InputText(label="Message", placeholder = "What you want the bot to send", style=discord.InputTextStyle.long))
 
-
-    if maintenanceStatus == 0:
-        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for >help"))
-        await sleep(delay)
-    
-
-    if maintenanceStatus == 0:
-        guildCount = await get_status_info(self,0)
-        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"{guildCount} servers"))
-        await sleep(delay)
-    
-
-    if maintenanceStatus == 0:
-        memberCount = await get_status_info(self,1)
-        await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"{memberCount} members"))
-        await sleep(delay)
-
-async def setstatus(self, ctx, status, type):
-
-    global maintenanceStatus
-
-    if status != "":
-            
-        oldstatus = status
-        spaces = ctx.message.content.split(" ")
-        if len(spaces) > 2:
-            status = ctx.message.content.split(status)
-            newStatus = f"{oldstatus}{status[1]}"
-        else:
-            newStatus = status
-
-        try:
-
-            if type == "playing":
-                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=newStatus))
-
-            elif type == "listening":
-                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=newStatus))
-
-            elif type == "watching":
-                await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=newStatus))
-        
-            elif type == "streaming":
-                await self.bot.change_presence(activity=discord.Streaming(url="https://www.twitch.tv/techlifeyt",name=newStatus))
-
-            maintenanceStatus = 1
-
-            success = setembedvar("G","Success!", description = f"Changed status to `{newStatus}`.")
-
-            status_update.cancel()
-            await ctx.send(embed = success)
-
-        except Exception as e:
-
-            failure = setembedvar("R","Uh oh!", description = f"Couldn't update status; `{e}`")
-            await ctx.send(embed = failure)
-
-    else:
-            
-        maintenanceStatus = 0
-
-        if status_update.is_running() == True:
-
-            status_update.restart(self)
-            description = f"{yep} Restarted status cycle."
-        
-        else:
-
-            status_update.start(self)
-            description = f"{yep} Started status cycle."
-        
-        await ctx.send(embed = setembedvar("G","Reset Status", description = description))
-
-async def get_status_info(self,mode):
-
-    guildCount = memberCount = 0
-
-    async for guild in self.bot.fetch_guilds():
-        guild = self.bot.get_guild(guild.id)
-        guildCount += 1
-        memberCount += guild.member_count
-
-    if mode == 0: # guildCount
-        return guildCount
-    elif mode == 1: # memberCount
-        return memberCount
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.send_message(self.children[0].value)
 
 class Owner(commands.Cog, name="owner"):
     def __init__(self, bot):
-        self.bot = bot
-
-    @commands.command()
-    @commands.is_owner()
-    async def shutdown(self,ctx):
-        await ctx.message.add_reaction('✅')
-        await self.bot.close()
-        quit()
+        self.bot: discord.Bot = bot
     
-    @commands.Cog.listener()
-    async def on_ready(self):
+    @loop(seconds=60)
+    async def status_update(bot: discord.Bot):
+        DELAY = 60 # seconds
+        if maintenanceStatus == 0:
+            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for /help"))
+            await sleep(DELAY)
+            guildCount = await Owner.get_status_info(bot, 0)
+            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"{guildCount} servers"))
+            await sleep(DELAY)
+            memberCount = await Owner.get_status_info(bot, 1)
+            await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"{memberCount} members"))
+            await sleep(DELAY)
 
-        print(f"Successfully logged in as {self.bot.user.name} / {self.bot.user.id}"+"\n------")
+    async def get_status_info(bot: discord.Bot,mode):
+        memberCount = guildCount = 0
+        guilds = bot.fetch_guilds()
+        async for guild in guilds:
+            guild = bot.get_guild(guild.id)
+            memberCount += guild.approximate_member_count
+            guildCount += 1
+        if mode == 0: # guildCount
+            return guildCount
+        return memberCount
 
-        status_update.start(self)
+    botCommands = SlashCommandGroup(
+        "bot",
+        "Commands related to the bot's function. Can only be run by its owner",
+        guild_ids = vars.OWNERGUILDS
+    )
 
-        channel = self.bot.get_channel(statusChannel)
-        await channel.send(embed = onlineVar)
+    statusCommands = botCommands.create_subgroup("status", "Change the bot's status with these")
+    serverCommands = botCommands.create_subgroup("server", "Handles server-related commands")
+    state_choices = [discord.OptionChoice(name = 'On', value = 1), discord.OptionChoice(name = 'Off', value = 0)]
 
-    @commands.command()
+    @statusCommands.command(description = "Enables/disables the bot's maintenance status")
     @commands.is_owner()
-    async def maintenance(self, ctx, status: str):
+    async def maintenance(self, ctx, status: discord.Option(
+        int, description = "Whether maintenance mode is on or off", choices = state_choices
+        )
+    ):
         global maintenanceStatus
-        if status == "on":
-
-            maintenanceStatus = 1
-
-            channel = self.bot.get_channel(statusChannel)
-
-            maintenanceVar = setembedvar("R",f"{dnd} Maintenance",f"TechBot is currently undergoing maintenance."+"\nThis means that most, if not all, commands will be unavailable.\nCheck back here for updates.")
-            await channel.send(embed = maintenanceVar)
-            await ctx.channel.send(embed = setembedvar("G",f"Success",f"{yep} Maintenance mode enabled"))
-            await self.bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Activity(type=discord.ActivityType.watching, name="for updates. The bot is currently undergoing maintenance and so some (if not all) commands will be unavailable."))
-
-            status_update.cancel()
-
-        elif status == "off":
-
-            maintenanceStatus = 0
-            status_update.start(self)
-
-            channel = self.bot.get_channel(statusChannel)
-            await channel.send(embed = onlineVar)
-
+        maintenanceStatus = status
+        if status == 1:
+            channel = self.bot.get_channel(vars.STATUSCHANNEL)
+            await channel.send(embed = embs.Maintenance())
+            await ctx.respond(embed = embs.Success("Maintenance mode enabled"))
+            await self.bot.change_presence(
+                status = discord.Status.dnd,
+                activity = discord.Activity(
+                    type = discord.ActivityType.watching,
+                    name = "for updates. The bot is currently undergoing maintenance and so some (if not all) commands will be unavailable."
+                )
+            )
+            Owner.status_update.cancel()
         else:
-            await ctx.channel.send(embed = setembedvar("R","Incorrect command usage.",f"{nope} Enter 'on' or 'off'."))
-        
-    @commands.command()
+            Owner.status_update.start(self.bot)
+            await ctx.respond(embed = embs.Success("Maintenance mode disabled"))
+            channel = self.bot.get_channel(vars.statusChannel)
+            await channel.send(embed = embs.Online())
+
+    @botCommands.command(description = "Lists the bot's servers and their module status")
     @commands.is_owner()
-    async def botservers(self, ctx):
-
-        description = f"{loading} Hold on, this could take a while!"+"\nDiscord will be ratelimiting these messages..."
-
-        await ctx.send(embed = setembedvar("G","Getting all servers...", description = description))
-        servers = loadServerJson()
-
-        async for guild in self.bot.fetch_guilds():
-            guild = self.bot.get_guild(guild.id)
-            server = servers[str(guild.id)]
-            serverEmbed = setembedvar("G", guild.name, thumbnail = guild.icon_url)
-            serverEmbed.add_field(name="Prefix", value= f"`{server['prefix']}`")
-            serverEmbed.add_field(name="Guild ID", value= f"`{guild.id}`")
-            serverEmbed.add_field(name="Slur Detector", value= f'`{server["slurdetector"]["enabled"]}`, `{server["slurdetector"]["channel"]}`')
-            serverEmbed.add_field(name="Music", value= f'`{server["music"]["enabled"]}`, `{server["music"]["channel"]}`')
-            serverEmbed.add_field(name="Welcome", value= f'`{server["welcome"]["enabled"]}`, `{server["welcome"]["channel"]}`'+"\n"+f'`{server["welcome"]["message"]}`')
-            await ctx.send(embed = serverEmbed)
+    async def servers(self, ctx):
+        await ctx.respond(
+            embed = discord.Embed(
+                title = "Getting all servers...",
+                description = f"""{emoji.loading} Hold on, this could take a while!
+                Discord will be ratelimiting these messages..."""
+            )
+        )
+        servers = await db.loadServers(self.bot)
+        for server in servers: 
+            await ctx.send(embed = await server.GetEmbed())
     
-    @commands.command()
+    @serverCommands.command(description = "Makes the bot leave the specified server")
     @commands.is_owner()
-    async def leaveserver(self, ctx, id: int):
-
-        to_leave = self.bot.get_guild(id)
+    async def leave(self, ctx, id: discord.Option(str, "ID of the server to leave")):
+        to_leave: discord.Guild = await self.bot.fetch_guild(int(id))
         await to_leave.leave()
 
-    @commands.command()
+    status_types = [
+        discord.OptionChoice(name = 'Playing'),
+        discord.OptionChoice(name = 'Streaming'),
+        discord.OptionChoice(name = 'Listening'),
+        discord.OptionChoice(name = 'Watching')
+    ]
+
+    @statusCommands.command(description = "Set the bot's status")
     @commands.is_owner()
-    async def playing(self, ctx, status = ""):
+    async def set(self, ctx,
+        type = discord.Option(
+            str, description = "The type of status to start the status with", choices = status_types
+        ),
+        status = discord.Option(str, description = "The status to change the bot to", default = "")
+    ):
+        global maintenanceStatus
+        if status != "":
+            try:
+                if type == "Playing":
+                    await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.playing, name = status))
+                elif type == "Listening":
+                    await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.listening, name = status))
+                elif type == "Watching":
+                    await self.bot.change_presence(activity = discord.Activity(type = discord.ActivityType.watching, name = status))
+                elif type == "Streaming":
+                    await self.bot.change_presence(activity = discord.Streaming(url = vars.streamingURL, name = status))
 
-        await setstatus(self, ctx, status, "playing")
+                maintenanceStatus = 1
+                Owner.status_update.cancel()
+                await ctx.respond(embed = embs.Success(f"Changed status to `{status}`"))
+            except Exception as e:
+                await ctx.respond(embed = embs.Failure("Couldn't update status", e))
+        else:
+            maintenanceStatus = 0
 
-    @commands.command()
-    @commands.is_owner()
-    async def listening(self, ctx, status = ""):
+            if Owner.status_update.is_running() == True:
+                Owner.status_update.restart(self.bot)
+                description = "Restarted status cycle"
+            else:
+                Owner.status_update.start(self.bot)
+                description = "Started status cycle"
+            
+            await ctx.respond(embed = embs.Success(description, title = "Reset Status"))
 
-        await setstatus(self, ctx, status, "listening")
-
-    @commands.command()
-    @commands.is_owner()
-    async def streaming(self, ctx, status = ""):
-
-        await setstatus(self, ctx, status, "streaming")
-
-    @commands.command()
-    @commands.is_owner()
-    async def watching(self, ctx, status = ""):
-
-        await setstatus(self, ctx, status, "watching")
-
-    @commands.command()
+    @botCommands.command(description = "Logs the bot out of Discord")
     @commands.is_owner()
     async def logout(self, ctx):
-        await ctx.send(embed = setembedvar("G", "Logging out", f"{wave_animated} See you soon!"))
-        channel = self.bot.get_channel(statusChannel)
-        await channel.send(embed = setembedvar(0x747F8E, f"{offline} Offline", f"The bot is going offline. Check here for updates."))
-        await self.bot.logout()
-    
-    @commands.command()
+        await ctx.respond(embed = discord.Embed(title = "Logging out", description = f"{emoji.wave_animated} See you soon!"))
+        channel = self.bot.get_channel(vars.statusChannel)
+        await channel.send(embed = embs.Offline)
+        await self.bot.close()
+
+    @botCommands.command(description = "Repeats what the user requests it to")
     @commands.is_owner()
     async def echo(self, ctx):
-        await ctx.send(ctx.message.content.split("echo ")[1])
+        await ctx.send_modal(EchoModal(title = "Echo"))
 
-    @commands.command()
-    @commands.is_owner()
-    async def load(self, ctx, extension):
-        try:
-            self.bot.load_extension(f'cogs.{extension}')
-            embedVar = setembedvar("G","Successful Load",f"{yep} Successfully loaded "+ extension)
-            await ctx.message.channel.send(embed=embedVar)
-        except Exception as e:
-            embedVar = setembedvar("R","Unsuccessful Load",f"{nope} Couldn't load "+ extension+ "\n"+f"`{e}`")
-            await ctx.message.channel.send(embed=embedVar)
+    cog_list = []
 
-    @commands.command()
-    @commands.is_owner()
-    async def unload(self, ctx, extension):
-        try:
-            self.bot.unload_extension(f'cogs.{extension}')
-            embedVar = setembedvar("G","Successful Unload",f"{yep} Successfully unloaded "+ extension)
-            await ctx.message.channel.send(embed=embedVar)
-        except Exception as e:
-            embedVar = setembedvar("R","Unsuccessful Unload",f"{nope} Couldn't unload "+ extension+ "\n"+f"`{e}`")
-            await ctx.message.channel.send(embed=embedVar)
+    for filename in os.listdir('./cogs'):
+        if filename.endswith('.py'):
+            cog_list.append(
+                discord.OptionChoice(name = filename.split('.py')[0])
+            )
 
-    @commands.command()
+    available_cog_options = discord.Option(str, description = "The cog to load/unload", choices = cog_list)
+
+    cog_choices = [
+        discord.OptionChoice(name = "Load"),
+        discord.OptionChoice(name = "Unload"),
+        discord.OptionChoice(name = "Reload")
+    ]
+
+    cog_options = discord.Option(str, description = "Whether to load, unload, or reload the cog", choices = cog_choices)
+
+    @botCommands.command(description = "Load, unload, or reload the specified cog")
     @commands.is_owner()
-    async def reload(self, ctx, extension):
+    async def cog(self, ctx, operation: cog_options, extension: available_cog_options):
         try:
-            self.bot.reload_extension(f'cogs.{extension}')
-            embedVar = setembedvar("G","Successful Reload",f"{yep} Successfully reloaded "+ extension)
-            await ctx.message.channel.send(embed=embedVar)
+            if operation == "Load":
+                self.bot.load_extension(f'cogs.{extension}')
+            elif operation == "Unload":
+                self.bot.unload_extension(f'cogs.{extension}')
+            elif operation == "Reload":
+                self.bot.reload_extension(f'cogs.{extension}')
+
+            await ctx.respond(embed = embs.Success(f"Successfully {operation.lower()}ed `{extension}`"))
         except Exception as e:
-            embedVar = setembedvar("R","Unsuccessful Reload",f"{nope} Couldn't reload "+ extension+ "\n"+f"`{e}`")
-            await ctx.message.channel.send(embed=embedVar)
+            await ctx.respond(embed = embs.Failure(f"Couldn't {operation.lower()} {extension}", e))
 
 def setup(bot):
     bot.add_cog(Owner(bot))

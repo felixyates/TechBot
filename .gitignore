@@ -7,3 +7,8 @@ servers.json
 .cache
 cogs/blocklist.txt
 .DS_Store
+*.sln
+*.pyproj
+*.old
+.vs/*
+.gitignore

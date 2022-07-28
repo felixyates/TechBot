@@ -1,24 +1,39 @@
 import discord, spotipy
 from modules.getjson import secret
-from modules.embedvars import setembedvar
+from modules import embs
 from spotipy import SpotifyClientCredentials
 
-URL1, URL2, defaultPfp = "https://open.spotify.com/", "https://www.open.spotify.com/", "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
-colour = 0x1db954
+URL1, URL2, DEFAULTPFP = "https://open.spotify.com/", "https://www.open.spotify.com/", "https://developer.spotify.com/assets/branding-guidelines/icon4@2x.png"
+COLOUR = 0x1db954
 spotify = secret("spotify")
-sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id = spotify["public"], client_secret = spotify["private"]))
+sp = spotipy.Spotify(auth_manager = SpotifyClientCredentials(client_id = spotify["public"], client_secret = spotify["private"]))
+
+class Subclass:
+    def __init__(self, dict: dict):
+        for (key, value) in dict.items():
+            if key in ["popularity", "danceability", "energy"]:
+                value = Object.ToPercent(self, value)
+            elif key == "tempo":
+                value = round(value)
+            setattr(self, key, value)
+
+class SpEmbed(embs.Embed):
+    def __init__(self, **kwargs):
+        kwargs["color"] = COLOUR
+        super().__init__(**kwargs)
+    
+    async def SetFooter(self, author: discord.User):
+        self.add_field(name = 'Recommended by', value = author.mention)
+        self.set_footer(text="Data: Spotify", icon_url=author.avatar.url)
 
 class Funcs():
-
     async def idGetter(messageContent: str, contentType: str):
-
         id = messageContent.replace(f"{URL1}{contentType}/","")
         id = id.replace(f"{URL2}{contentType}/","")
         id = id.split("?")[0]
         return id
 
     def durationFormatter(durationMs):
-
         durationSecs = (durationMs/1000)
         durationMins = durationSecs // 60
         remainderSecs = round(durationSecs - (durationMins*60))
@@ -46,75 +61,39 @@ class Funcs():
             
             return self, embed
 
-    async def SetFooter(embed: discord.Embed, author: discord.User, type: str):
-        embed.set_footer(text=f"{type} recommended by {author.display_name} • Data: Spotify",icon_url=author.avatar_url)
-        return embed
-
-class TopTrack():
-
+class Object:
     def __init__(self, id):
-        tracks = sp.artist_top_tracks(id)["tracks"]
-
-        if len(tracks) > 0:
-
-            self.has = True
-            track = tracks[0]
-            self.name = track["name"]
-            self.url = track["external_urls"]["spotify"]
-            self.album = Album(track["album"]["uri"])
+        self.id = id
+    
+    def ToPercent(self, value: float):
+        if value < 1:
+            return f"{round(value*100)}%"
         else:
-            self.has = False
-            self.album.icon = ""
+            return f"{round(value)}%"
 
-    async def getEmbed(self):
-        if self.has == True:
-            return discord.Embed(title = self.name, url = self.url, description = "Most popular song (USA)\n"+f"on [{self.album.name}]({self.album.url})", color= colour)
-        else:
-            return discord.Embed(title="", description="Artist does not have enough plays for top songs.", color= colour)
-
-class Artist():
-
-    def __init__(self, id):
-        artist = sp.artist(id)
-        self.id = artist["id"]
-        self.name = artist["name"]
-        self.url = artist["external_urls"]["spotify"]
-        self.followers = artist["followers"]["total"]
-        self.popularity = f"{artist['popularity']}%"
-
-        try:
-            self.icon = artist["images"][0]["url"]
-        except:
-            self.icon = defaultPfp
-
-    async def getEmbed(self, author):
-            self.topTrack = TopTrack(self.id)
-            embed = await self.topTrack.getEmbed()
-            embed.set_author(name = self.name, url = self.url, icon_url = self.icon)
-            embed.set_thumbnail(url = self.topTrack.album.icon)
-            embed.add_field(name="Followers", value = self.followers, inline=True)
-            embed.add_field(name="Artist Popularity", value = self.popularity, inline=True)
-            embed = await Funcs.SetFooter(embed, author, "Artist")
-            return embed
-
-class Playlist():
-
-    def __init__(self, id):
-        playlist = sp.playlist(id)
-        self.name = playlist["name"]
-        self.description = playlist["description"]
-        self.url = playlist["external_urls"]["spotify"]
-        self.followers = playlist["followers"]["total"]
-        self.tracks = playlist["tracks"]["total"]
-        self.owner = playlist["owner"]["id"]
-
-        try:
-            self.imageurl = playlist["images"][0]["url"]
-        except:
-            self.imageurl = ""
-
-        # Cleaning up playlist description (Spotify handles characters weirdly).
-            # Need to work on this - it doesn't work.
+    def AttributeSetter(self, attrs: dict):
+        for (key, value) in attrs.items():
+            if key == "external_urls":
+                self.url = value["spotify"]
+            elif key == "followers":
+                self.followers = value["total"]
+            elif key == "images":
+                if len(value) > 0:
+                    self.icon = value[0]["url"]
+                else:
+                    self.icon = DEFAULTPFP
+            elif key == "owner":
+                self.owner = value["id"]
+            elif key == "duration_ms":
+                self.duration = Funcs.durationFormatter(value)
+            elif type(value) == dict:
+                setattr(self, key, Subclass(value))
+            else:
+                setattr(self, key, value)
+        
+    def DescCleanup(self):
+        """Cleaning up playlist description (Spotify handles characters weirdly).
+        - Need to work on this - it doesn't work."""
 
         replaceList = [['&amp;','&'],['&#x2F;','/']]
 
@@ -127,145 +106,156 @@ class Playlist():
                 if replaceList[i][0] in self.description:
                     self.description.replace(replaceList[i][0], replaceList[i][1])
 
-        # Getting playlist owner information.
+class Spotify:
+    class Track(Object):
+        def __init__(self, id):
+            track = sp.track(id)
+            self.AttributeSetter(track)
+            self.adv = Subclass(sp.audio_features(id)[0])
+            self.mainArtist = Spotify.Artist(self.artists[0]["id"])
+            self.album = Spotify.Album(track["album"]["id"])
 
-        ownerID = str(self.owner)
+        async def GetEmbed(self, author):
+            embed = SpEmbed(title = self.name, url = self.url, thumbnail = self.album.icon)
+            embed.set_author(name = self.mainArtist.name, url = self.mainArtist.url, icon_url = self.mainArtist.icon)
+            self, embed = Funcs.multipleArtistHandler(self, self.artists, embed)
+            fields = [
+                ["Duration", self.duration],
+                ["Danceability", self.adv.danceability],
+                ["Energy", self.adv.energy],
+                ["Key", self.adv.key],
+                ["Tempo", self.adv.tempo],
+                ["Album",f"[{self.album.name}]({URL1}/album/{self.album.id.strip('spotify:album:')}/)"]
+            ]
+            if self.preview_url is not None:
+                fields.append(["Preview",f"[Download]({self.preview_url})"])
+            embed.AddFields(fields)
+            await embed.SetFooter(author)
+            return embed
 
-        # Using owner info to get playlist owner URL and icon.
+    class TopTrack(Track):
+        def __init__(self, id):
+            tracks = sp.artist_top_tracks(id)["tracks"]
 
-        self.owner = User(ownerID)
+            if len(tracks) > 0:
+                self.track = tracks[0]
+                self.AttributeSetter(self.track)
+                self.album = Spotify.Album(self.album.uri)
 
-    async def getEmbed(self, author):
-        pl = self
-        embed=discord.Embed(title= pl.name, url= pl.url, description = pl.description, color=colour)
-        embed.set_author(name= pl.owner.name, url= pl.owner.url, icon_url= pl.owner.pfp)
-        embed.set_thumbnail(url= pl.imageurl)
-        embed.add_field(name="Tracks", value= pl.tracks, inline=True)
-        embed.add_field(name="Followers", value= pl.followers, inline=True)
-        embed = await Funcs.SetFooter(embed, author, "Playlist")
-        return embed
+        async def GetEmbed(self):
+            if hasattr(self, "track"):
+                return SpEmbed(
+                    title = self.name,
+                    url = self.url,
+                    description = f"""Most popular song (USA)
+                    on [{self.album.name}]({self.album.url})"""
+                )
+            else:
+                return SpEmbed(description="Artist does not have enough plays for top songs.")
 
-class Album():
+    class Artist(Object):
+        def __init__(self, id):
+            artist = sp.artist(id)
+            self.AttributeSetter(artist)
+            try:
+                self.icon = artist["images"][0]["url"]
+            except:
+                self.icon = DEFAULTPFP
 
-    def __init__(self, id):
-        album = sp.album(id)
-        self.name = album["name"]
-        self.url = album["external_urls"]["spotify"]
-        self.release_date = album["release_date"]
-        self.tracks = album["tracks"]["total"]
-        self.icon = album["images"][0]["url"]
-        self.artists = album["artists"]
-        self.mainArtist = Artist(self.artists[0]["id"])
-        self.id = album["id"]
+        async def GetEmbed(self, author):
+                self.topTrack = Spotify.TopTrack(self.id)
+                embed = await self.topTrack.GetEmbed()
+                embed.set_author(name = self.name, url = self.url, icon_url = self.icon)
+                embed.set_thumbnail(url = self.topTrack.album.icon)
+                embed.AddFields([['Followers', self.followers], ['Popularity', self.popularity]])
+                await embed.SetFooter(author)
+                return embed
 
-        trackList = []
-        trackItems = album["tracks"]["items"]
+    class Playlist(Object):
+        def __init__(self, id):
+            self.AttributeSetter(sp.playlist(id))
+            self.DescCleanup()
+            # Getting playlist owner information.
+            ownerID = str(self.owner)
+            # Using owner info to get playlist owner URL and icon.
+            self.owner = Spotify.User(ownerID)
 
-        for x in range(len(trackItems)):
-            trackList.append(trackItems[x])
+        async def GetEmbed(self, author):
+            embed = SpEmbed(title = self.name, url = self.url, description = self.description)
+            embed.set_author(name = self.owner.name, url = self.owner.url, icon_url= self.owner.pfp)
+            embed.set_thumbnail(url = self.icon)
+            fields = [["Tracks", self.tracks.total],["Followers", self.followers]]
+            embed.AddFields(fields)
+            await embed.SetFooter(author)
+            return embed
 
-        self.formattedTrackList = ""
+    class Album(Object):
+        def __init__(self, id):
+            album = sp.album(id)
+            trackItems = album["tracks"]["items"]
+            trackList = []
+            self.AttributeSetter(sp.album(id))
+            self.mainArtist = Spotify.Artist(self.artists[0]["id"])
 
-        for i in range(len(trackList)):
-            if i < 5:
-                self.formattedTrackList += f"{i+1}. [{trackList[i]['name']}]({trackList[i]['external_urls']['spotify']})" + "\n"
+            for x in range(len(trackItems)):
+                trackList.append(trackItems[x])
 
-        if len(trackList) > 5:
-            remainingTracks = self.tracks - 5
-            self.formattedTrackList += f"+ {remainingTracks} more songs..."
+            self.formattedTrackList = ""
 
-    async def getEmbed(self, author):
-        embed = setembedvar(colour, self.name, url= self.url, author = self.mainArtist.name, author_url = self.mainArtist.url, author_icon = self.mainArtist.icon, thumbnail = self.icon)
-        self, embed = Funcs.multipleArtistHandler(self, self.artists, embed)
-        embed.add_field(name="Release Date", value = self.release_date)
-        embed.add_field(name="Tracks", value = self.tracks)
-        embed.add_field(name="Track List", value = self.formattedTrackList, inline = False)
-        embed = await Funcs.SetFooter(embed, author, "Album")
-        return embed
+            for i in range(len(trackList)):
+                if i < 5:
+                    self.formattedTrackList += f"{i+1}. [{trackList[i]['name']}]({trackList[i]['external_urls']['spotify']})" + "\n"
 
-class User():
+            if len(trackList) > 5:
+                remainingTracks = self.tracks.total - 5
+                self.formattedTrackList += f"+ {remainingTracks} more songs..."
 
-    def __init__(self, id):    
-        user = sp.user(id)
-        self.name = user["display_name"]
-        self.url = user["external_urls"]["spotify"]
-        self.followers = user["followers"]["total"]
+        async def GetEmbed(self, author):
+            embed = SpEmbed(title = self.name, url = self.url)
+            embed.set_author(name = self.mainArtist.name, url = self.mainArtist.url, icon_url = self.mainArtist.icon)
+            embed.set_thumbnail(url = self.icon)
+            self, embed = Funcs.multipleArtistHandler(self, self.artists, embed)
+            fields = [["Release Date", self.release_date], ["Tracks", self.tracks.total], ["Track List", self.formattedTrackList, False]]
+            embed.AddFields(fields)
+            await embed.SetFooter(author)
+            return embed
 
-        try:
-            self.pfp = user["images"][0]["url"]
-        except:
-            self.pfp = defaultPfp
+    class User(Object):
+        def __init__(self, id):    
+            self.AttributeSetter(sp.user(id))
+            self.playlists = sp.user_playlists(id, limit=5)
 
-        self.playlists = sp.user_playlists(id, limit=5)
+            playlistStr = ""
+            pos = 0
+            items = self.playlists["items"]
+            self.has_playlists = False
 
-        playlistStr = ""
-        pos = 0
-        items = self.playlists["items"]
-        self.has_playlists = False
+            if len(items) > 0:
+                self.has_playlists = True
 
-        if len(items) > 0:
+                for x in items:
+                    pos += 1
+                    playlistStr = playlistStr + f"{pos}. [{x['name']}]({x['external_urls']['spotify']})" + "\n"
 
-            self.has_playlists = True
+                remaining = self.playlists['total'] - pos
 
-            for x in items:
+                if remaining > 0:
+                    self.playlistStr = playlistStr + f"+ {remaining} more"
 
-                pos += 1
-                playlistStr = playlistStr + f"{pos}. [{x['name']}]({x['external_urls']['spotify']})" + "\n"
+                self.firstPlaylistThumbnail = self.playlists["items"][0]["images"][0]["url"]
+        
+        async def GetEmbed(self, author):
+            user = self
+            fields = [["Followers", user.followers]]
+            embed = SpEmbed()
+            embed.set_author(name = user.name, url = user.url, icon_url = user.pfp)
 
-            remaining = self.playlists['total'] - pos
+            if self.has_playlists:
+                embed.set_thumbnail(user.firstPlaylistThumbnail)
+                fields.append(["Public Playlists", user.playlistStr])
+            else:
+                fields.append(["No Public Playlists", "Make sure they're public."])
 
-            if remaining > 0:
-
-                self.playlistStr = playlistStr + f"+ {remaining} more"
-
-            self.firstPlaylistThumbnail = self.playlists["items"][0]["images"][0]["url"]
-    
-    async def getEmbed(self, author):
-
-        user = self
-
-        if self.has_playlists:
-
-            embed = setembedvar(colour, title="", author = user.name, author_url = user.url, author_icon = user.pfp, thumbnail = user.firstPlaylistThumbnail)
-            embed.add_field(name = "Followers", value = user.followers)
-            embed.add_field(name = "Public Playlists", value = user.playlistStr, inline=False)
-    
-        else:
-
-            embed = setembedvar(colour, title="", author= user.name, author_url= user.url, author_icon= user.pfp)
-            embed.add_field(name = "Followers", value = user.followers)
-            embed.add_field(name = "No Public Playlists", value="Make sure they're public.", inline=False)
-
-        embed = await Funcs.SetFooter(embed, author, "User")
-        return embed
-
-class Track():
-
-    def __init__(self, id):
-        track = sp.track(id)
-        tr_adv = sp.audio_features(id)[0]
-        self.name = track["name"]
-        self.url = track["external_urls"]["spotify"]
-        self.preview_url = track["preview_url"]
-        self.duration = Funcs.durationFormatter(track["duration_ms"])
-        self.artists = track["artists"]
-        self.mainArtist = Artist(self.artists[0]["id"])
-        self.album = Album(track["album"]["id"])
-        danceability = f'{round(tr_adv["danceability"]*100, 1)}%'
-        energy = f'{round(tr_adv["energy"]*100, 1)}%'
-        key = tr_adv["key"]
-        tempo = round(tr_adv["tempo"], 1)
-        self.fields = [["Duration", self.duration], ["Danceability", danceability], ["Energy", energy], ["Key", key], ["Tempo", tempo]]
-
-    async def getEmbed(self, author):
-        embed = setembedvar(colour, self.name, url = self.url, author = self.mainArtist.name, author_url = self.mainArtist.url, author_icon = self.mainArtist.icon, thumbnail = self.album.icon)
-        self, embed = Funcs.multipleArtistHandler(self, self.artists, embed)
-        for field in self.fields:
-            embed.add_field(name = field[0], value = field[1], inline = True)
-        embed.add_field(name="Album", value=f"[{self.album.name}](https://open.spotify.com/album/{self.album.id.strip('spotify:album:')}/)", inline=True)
-
-        if self.preview_url is not None:
-            embed.add_field(name="Preview", value=f"[Download]({self.preview_url})", inline=True)
-
-        embed = await Funcs.SetFooter(embed, author, "Track")
-        return embed
+            embed.AddFields(fields)
+            await embed.SetFooter(author)
+            return embed

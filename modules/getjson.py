@@ -1,25 +1,16 @@
-import json, discord
-from discord.ext import commands
+import json
+from modules import vars
 
-path = 'servers.json'
-
-def loadServerJson():
-    "Loads the `servers.json` file."
-    with open(path, 'r') as f:
+def getServers():
+    "Loads the servers from the `servers.json` file."
+    with open(vars.JSONPATH, 'r') as f:
         servers = json.load(f)
-    return servers
+        return servers
 
-def updateServerJson(servers):
+def updateServers(servers):
     "Updates the `servers.json` file."
-    with open(path, 'w') as f:
+    with open(vars.JSONPATH, 'w') as f:
         json.dump(servers, f, indent=4)
-
-def thisServerJson(guildID):
-    "Loads the specified server's JSON data from the `servers.json` file."
-    with open(path, 'r') as f:
-        servers = json.load(f)
-        server = servers[str(guildID)]
-        return server
 
 def secret(fetch):
     """Fetches a secret from the `secrets.json` file
@@ -27,9 +18,3 @@ def secret(fetch):
     with open('secrets.json', "r") as f:
         secrets = json.load(f)
         return secrets[fetch]
-
-def get_prefix(bot, message):
-    "Loads the bot prefix from the `servers.json` file."
-    with open(path, "r") as f:
-        servers = json.load(f)
-    return commands.when_mentioned_or(servers[str(message.guild.id)]["prefix"])(bot, message)

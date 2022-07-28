@@ -1,0 +1,4 @@
+aiosqlite==0.17.0
+py-cord==2.0.0rc1
+python-youtube==0.8.1
+spotipy==2.18.0
